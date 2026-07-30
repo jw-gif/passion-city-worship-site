@@ -121,7 +121,9 @@ ul { list-style: none; }
 
 /* Footer email */
 .sidebar-footer {
-  padding: 20px 28px 28px;
+  /* Bottom padding clears the fixed sign-in gear, since .sidebar-nav's flex:1
+     pins this footer to the bottom of the viewport. */
+  padding: 20px 28px 74px;
   border-top: 1px solid rgba(255,255,255,0.07);
   flex-shrink: 0;
 }
@@ -600,6 +602,7 @@ footer a:hover { color: var(--accent); }
   align-items: flex-end;
   gap: 10px;
 }
+.edit-fab[hidden] { display: none; }
 
 .edit-fab__btn {
   display: flex;
@@ -626,6 +629,7 @@ footer a:hover { color: var(--accent); }
   align-items: center;
   gap: 8px;
 }
+.edit-fab__active[hidden] { display: none; }
 
 .edit-fab__cancel,
 .edit-fab__save {
@@ -921,23 +925,51 @@ footer a:hover { color: var(--accent); }
 /* =============================================
    Staff login control (sidebar footer)
    ============================================= */
-.sidebar-admin {
-  display: block;
-  margin-top: 14px;
+/* ── Staff sign-in gear ──
+   Fixed rather than parked in the sidebar footer, so it survives the sidebar
+   sliding off-canvas at 720px. Sits over the dark sidebar on desktop, so the
+   default treatment is light-on-dark. */
+.staff-gear {
+  position: fixed;
+  bottom: 28px;
+  left: 28px;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border: 0;
-  background: none;
-  font-family: inherit;
-  font-size: 0.58rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.32);
   cursor: pointer;
-  transition: color 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
-.sidebar-admin:hover,
-.sidebar-admin:focus-visible { color: var(--accent); }
+.staff-gear:hover,
+.staff-gear:focus-visible {
+  color: var(--accent);
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(44,172,227,0.4);
+}
+/* Signed in — a quiet cue that the gear now signs you out. */
+.staff-gear.is-signed-in {
+  color: var(--accent);
+  border-color: rgba(44,172,227,0.35);
+}
+
+/* Mobile drops the sidebar, leaving the gear over light page content. */
+@media (max-width: 720px) {
+  .staff-gear {
+    background: var(--black);
+    border-color: rgba(0,0,0,0.14);
+    color: rgba(255,255,255,0.62);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.22);
+  }
+  .staff-gear:hover,
+  .staff-gear:focus-visible { background: var(--off-black); color: #fff; }
+}
 
 /* =============================================
    Offline / error states
