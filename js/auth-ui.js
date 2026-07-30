@@ -1,7 +1,7 @@
 /* =============================================
    Staff sign-in
 
-   A small dialog behind the "Staff login" link in the sidebar. Visitors never
+   A small dialog behind the gear in the lower-left corner. Visitors never
    need it; staff use it to unlock the Edit button.
    ============================================= */
 (function () {
@@ -103,14 +103,18 @@
     }
   }
 
-  /* ── sidebar control ─────────────────────────────────────────────── */
+  /* ── sign-in gear ────────────────────────────────────────────────── */
 
   function syncControl() {
     const button = document.getElementById('adminToggle');
     if (!button) return;
     const signedIn = api.isSignedIn();
-    button.textContent = signedIn ? 'Sign out' : 'Staff login';
-    button.title = signedIn ? `Signed in as ${api.currentEmail()}` : 'Worship staff sign-in';
+    // The gear's label, not its contents — writing textContent here would
+    // delete the SVG.
+    const label = signedIn ? `Sign out (${api.currentEmail()})` : 'Staff sign-in';
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.classList.toggle('is-signed-in', signedIn);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
