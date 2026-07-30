@@ -1,0 +1,216 @@
+{
+  "sections": [
+    {
+      "id": "welcome",
+      "kind": "hero",
+      "eyebrow": "Passion City Church",
+      "title": "Welcome to<br><em>the worship team</em>",
+      "nav_label": "Welcome",
+      "description": "Everything you need to know about serving on our team.",
+      "is_builtin": true,
+      "blocks": [
+        {
+          "label": "",
+          "body_html": "<p>We are so excited for the opportunity to serve alongside you and look forward to getting to know you better as we all serve together. You are extremely valuable to us, and we are so grateful for the time, energy, and prayer you are dedicating to our team!</p>\n<p>At the heart of our team is a desire to glorify God and encourage our House through worship. We believe that worship, as a lifestyle, is our response to the revelation of a holy God. When we gather, we respond to God's radical grace through extravagant worship all to the praise of His glory. We also embrace the responsibility and mantle the Lord has placed on us to be His vessels. We pray that your time on our team would spur you on further in prayer, worship, intimacy with the Father, and a growth in Christlikeness. Additionally, we pray that this team would be a family to you! There is immense value in nurturing healthy relationships with one another as God is glorified when His people are unified.</p>\n<p>This booklet includes a directory of our staff, so you know who oversees each room and recognize our faces! We are all a resource for you, whether it is anything from technical questions to spiritual care. Additionally, the bulk of this booklet outlines detailed information regarding everything you need to know about serving on our team. Again, thank you for being a part, and if you have any questions, feel free to email <a href=\"mailto:worship@passioncitychurch.com\">worship@passioncitychurch.com</a>.</p>\n<p>What an honor it is to do what we love, serve in this capacity, and point people's eyes up to Jesus and the finished work of the cross. We are excited to see the ways God uses you to minister to our House.</p>\n<p>Exciting days ahead!</p>\n<p><strong>Jeff Johnson</strong><br>Director of Worship</p>",
+          "position": 1
+        }
+      ]
+    },
+    {
+      "id": "staff",
+      "kind": "staff",
+      "eyebrow": "Our Team",
+      "title": "Staff Directory",
+      "nav_label": "Staff Directory",
+      "description": "Your leads and coordinators across all locations.",
+      "is_builtin": true,
+      "blocks": []
+    },
+    {
+      "id": "how-it-works",
+      "kind": "grid",
+      "eyebrow": "Getting Started",
+      "title": "How It Works",
+      "nav_label": "How It Works",
+      "description": "Shadowing, scheduling, songs, and rehearsals.",
+      "is_builtin": true,
+      "blocks": [
+        {
+          "label": "Getting Started",
+          "body_html": "<h2>Shadowing</h2>\n<p>One of the first things you'll do on the worship team is shadow another team member in your respective role. This will happen two times and will allow you to see how a typical rehearsal and Sunday gathering will be like for your rostered position. Feel free to ask the person you're paired with any questions pertaining to leading in each environment as well as make some more connections with other teammates before you ever lead.</p>",
+          "position": 1
+        },
+        {
+          "label": "Scheduling",
+          "body_html": "<h2>Scheduling</h2>\n<p>We use an online program called Planning Center Online (PCO). If you don't already have an account with us, you may receive a welcome email. PCO is what we use for all of our scheduling and where our song files, etc., are found for your rostered dates.</p>\n<p>Before accepting any requests, be sure to take a moment to cross-check your entire availability, which may or may not include an additional rehearsal date. Please refer to this regularly, as it is our primary source of communication as it pertains to rosters. If you have not confirmed within one week of the event, we will more than likely move on and ask someone else.</p>\n<p>For weekend gatherings, we typically send a couple months' worth of requests at a time roughly a month in advance. For mid-week events, it may be closer to 2–3 weeks in advance.</p>",
+          "position": 2
+        },
+        {
+          "label": "Songs",
+          "body_html": "<h2>Songs</h2>\n<p>Each week you will receive the set list before the event / mid-week rehearsals. The set list is subject to change, so it would also be helpful for you and everyone you serve with if you are familiar with songs from at least the last few Passion recordings + the PCC Master Song List. Most of the songs we lead will be from this master list or found on these albums + other notable worship albums from other artists such as Hillsong, Bethel Music, Elevation Worship, etc.</p>\n<p>For other Special Events (i.e., The Grove, YA, Fight Night, etc.), you may receive the set list somewhere in the ballpark of 2–4 days out, and on occasion, earlier / later.</p>",
+          "position": 3
+        },
+        {
+          "label": "Rehearsals",
+          "body_html": "<h2>Mid-Week Rehearsals</h2>\n<p>If a Sunday auditorium date comes with a rehearsal, you will be expected to be a part of our mid-week rehearsals. Rehearsal dates are attached to your PCO requests. Please be sure to look at your full availability (including the rehearsal) before accepting any dates.</p>\n<p>For all other events, we typically do not have an additional rehearsal outside of the few hours before the event (YA, The Rising, Kids, etc.), but on the occasion we do have some extended rehearsals, we will do our best to notify you as soon as we know.</p>",
+          "position": 4
+        }
+      ]
+    },
+    {
+      "id": "on-site",
+      "kind": "grid",
+      "eyebrow": "Logistics",
+      "title": "On-Site Info",
+      "nav_label": "On-Site Info",
+      "description": "Availability, call times, cancellations, and parking at every location.",
+      "is_builtin": true,
+      "blocks": [
+        {
+          "label": "Availability",
+          "body_html": "<h2>Block Out Dates</h2>\n<p>Please go through your Planning Center Online profile periodically and block out any dates for when you know you will not be available (including Sundays, midweek events, and rehearsals). Simply declining a date does not show as a conflict for us, so you might accidentally be asked to serve in a different environment because according to your profile you are available.</p>\n<p>Blocking out dates keeps that from happening and helps tremendously in our planning.</p>",
+          "position": 1
+        },
+        {
+          "label": "Call Times",
+          "body_html": "<h2>Call Times</h2>\n<p>Call times will be found within your PCO plan for the gathering(s) for which you are rostered. Call times are when we're expected to be on stage ready to go, not walk in the door.</p>\n<p>Please ensure that you leave margin to travel, park, get in the building, get checked in, get your coffee (if needed), pick up your pack, get plugged in, tune, etc., by your call times. Sometimes, due to things outside of our control, start time for sound checks may get delayed, but please do what you can to be on time and ready on your end.</p>",
+          "position": 2
+        },
+        {
+          "label": "Cancellations",
+          "body_html": "<h2>Cancellations / Sick / Running Late</h2>\n<p>When you are scheduled, please know we are counting on you and asking that you make every effort to be on time. If you happen to ever run late, contact the point person for that environment (they will be the one to send you info closer to your rostered dates) + the worship leader or Music Director (MD) for the environment you're leading in for that day.</p>\n<p>If you are feeling sick, contact your environment point person as soon as possible so we can find a replacement for that day.</p>\n<p>You are placed in a very unique leading role, so <strong>last minute cancellations are not acceptable</strong> with the exception of emergencies, unforeseen events, and illnesses.</p>\n<h3>TRL Live Walk-Thru</h3>\n<ul>\n<li><strong>Check-in:</strong> You will receive a temporary badge at security to get you through the doors for the day.</li>\n<li><strong>Check-out:</strong> When leaving, return the badge at security each week (these belong to TRL LIVE). If security is not present, it is fine to just leave it there.</li>\n</ul>",
+          "position": 3
+        },
+        {
+          "label": "Parking",
+          "body_html": "<h2>Parking</h2>\n<h3>515</h3>\n<p>On Sunday mornings, anyone without bulkier gear will be shuttling in from the Rollins parking lot @ 2170 Piedmont Rd NE, Atlanta GA 30324. Shuttles will pick up from a well-marked area near the center of the lot. You are welcome to walk, but shuttles will run frequently.</p>\n<p><em>For those with gear, you will receive a weekly code to park in the backlot.</em></p>\n<h3>CBL</h3>\n<p>On Sundays, please park in the JE DUNN lot, as marked on the map in yellow.</p>\n<p><strong>JE DUNN ADDRESS:</strong> 2555 Cumberland Pkwy SE</p>\n<p>There is a walkway connecting JE Dunn and the CBL lot (refer to map).</p>\n<h3>TRL</h3>\n<p>Band parking is located in the gravel lot next to the Town of Trilith adjacent to TRL Live's loading dock. If facing the main front entrance of TRL Live, parking will be to the right of the building.</p>\n<p><strong>175 Trilith Parkway, Fayetteville, GA 30214</strong></p>\n<p><em>This address may lead you to the parking deck side. You need to exit the roundabout to head towards the right of TRL Live's main entrance and towards the Town of Trilith to get to the gravel lot adjacent to TRL Live.</em></p>",
+          "position": 4
+        }
+      ]
+    },
+    {
+      "id": "team-life",
+      "kind": "grid",
+      "eyebrow": "Community",
+      "title": "Team Life",
+      "nav_label": "Team Life",
+      "description": "IEMs, wristbands, green room, seating, and stage presence.",
+      "is_builtin": true,
+      "blocks": [
+        {
+          "label": "In-Ear Monitors",
+          "body_html": "<h2>In-Ear Monitors (IEMs)</h2>\n<p>When playing in most of our environments, our team uses in-ear monitors. If you do not own a pair, we have a small number of universal pairs available to use. If you do own your own pair, we encourage you to bring your own IEMs when you play or sing.</p>\n<p>If borrowing a pair from our team, you will need to trade in your car keys with the production team. Following the gatherings, simply return the in-ears and trade them back in for your car keys.</p>\n<p>We have partnerships with 64 Audio that allow us a slight discount on their custom in-ear monitors. If you are interested in ordering a pair, please email <a href=\"mailto:jd.myers@passioncitychurch.com\">jd.myers@passioncitychurch.com</a>, and he will send you pricing as well as other information to help you in the process.</p>",
+          "position": 1
+        },
+        {
+          "label": "Wristbands",
+          "body_html": "<h2>Wristbands</h2>\n<p>When serving in Passion Students, Passion Kids, or Bloom, wristbands must be worn at all times.</p>\n<ul>\n<li>We prioritize the safety of our children, so the wristband indicates your background check is up to date, on file, and that you are safe to enter.</li>\n<li>Please pick up your wristbands in the 515 or CBL auditorium building or TRL LIVE when you arrive. Please pick these up before or immediately following soundcheck.</li>\n</ul>\n<h3>Restrooms in Kids</h3>\n<p>The restrooms in Kids and Bloom are off limits once children enter the premises. This is for the safety and protection of our children. The only times you may use the restrooms within Passion Kids or Bloom would be during non-Kids and Bloom hours.</p>",
+          "position": 2
+        },
+        {
+          "label": "Green Room",
+          "body_html": "<h2>Green Room / Guest Lounge</h2>\n<p>Before gatherings, we gather together to eat, build community, and pray in what is called the \"green room or guest lounge.\" The purpose of the green room is primarily for those things and not a place to simply hang out.</p>\n<p>We encourage our team to remain accessible and visible in places like the Oval at 515 or Atrium at CBL and throughout other parts of our building, not just in the green room. Because of this and wanting to be present in the gatherings, we discourage our team from being in the green room all day or outside of your rostered event.</p>\n<p><strong>Other things to note:</strong> Meals are only for rostered musicians in your respective rooms. Spouses are welcome to join for prayer, but they have not been included in the meal count for the day.</p>\n<h3>By Location</h3>\n<p><strong>515</strong> — Auditorium, Students, and Kids teams' meals will all be served in the 515 Guest Lounge.</p>\n<p><strong>CBL</strong> — Due to the smaller spaces, band meals will be served in your respective rostered green room spaces (i.e., PK Green Room, etc.). Teams may still be invited to join in pre-gathering prayer in the CBL Green Room in the auditorium building, but outside of that, if you are rostered to serve in Kids or Students, please be mindful of staying with your respective teams in your rostered spaces.</p>\n<p><strong>TRL</strong> — Auditorium + Student + Kids meals are served in the Guest Lounge on level 4.</p>",
+          "position": 3
+        },
+        {
+          "label": "Band Seating",
+          "body_html": "<h2>Band Seating on Sundays</h2>\n<p>Our team helps lead both on and off the stage, and one of the ways we get to help lead off stage is by being present in the gatherings. Each week, if you are serving with our team on a Sunday, and unless told otherwise, please plan to sit together in at least the 9:30a gathering at all of our locations.</p>\n<p>If you are bringing a spouse or guest, or if you plan to also attend the 11:45a gathering, please email Landon Wolfe at <a href=\"mailto:landon.wolfe@passioncitychurch.com\">landon.wolfe@passioncitychurch.com</a> so we can reserve seats for you.</p>",
+          "position": 4
+        },
+        {
+          "label": "Stage Presence",
+          "body_html": "<h2>Environment / Stage Presence</h2>\n<p>In the gatherings, we are trying to create an atmosphere that reflects the joy and life of Christ. When we are celebrating, we don't want you to \"perform,\" but we do want to encourage being expressive and engaged. We want you to be honest and genuine. The more engaged you are, the more we get to help free up others. <strong>Free people free people!</strong></p>\n<p>There will also be worshipful moments full of reverence and awe. We want you to grow to be sensitive to what the Lord is doing and help lead others to respond, all the while maintaining the balance of worshiping while leading — not being so lost in our worship that we forget to take people with us, keeping our eyes open (both spiritually and physically), and outwardly expressing what God has already done in us.</p>",
+          "position": 5
+        }
+      ]
+    },
+    {
+      "id": "guidelines",
+      "kind": "grid",
+      "eyebrow": "Expectations",
+      "title": "Guidelines",
+      "nav_label": "Guidelines",
+      "description": "FOBs & credentials, dress code, and compensation.",
+      "is_builtin": true,
+      "blocks": [
+        {
+          "label": "FOBs & Credentials",
+          "body_html": "<h2>FOBs / Credentials</h2>\n<p>You will be given a fob to access the environments you'll need to be in when serving. Having a fob is a privilege — getting to do what we do and having access to the spaces we are in — so we ask that you use discernment when using it as well as knowing when not to use it (not being in the spaces when you don't need to be, etc.). Thank you for your continued cooperation in treating what we have access to with respect.</p>\n<p>Should anyone be found overusing or abusing the privilege of having a fob, we and other teams reserve the right to revoke fob access and privileges. Abuse would consist of, but not limited to, the following examples:</p>\n<ul>\n<li>Using it on weeks when you're not rostered.</li>\n<li>Allowing entry through doors to others without permission.</li>\n<li>If you're rostered in the morning (Students, Kids, TRL or AM AUD teams) but not in the evenings and use it in the evenings.</li>\n</ul>\n<p>If you have any fob questions, reach out to Chris Donovan at <a href=\"mailto:chris.donovan@passioncitychurch.com\">chris.donovan@passioncitychurch.com</a>.</p>",
+          "position": 1
+        },
+        {
+          "label": "What to Wear",
+          "body_html": "<h2>What to Wear</h2>\n<p>We want you to be yourself. You are on a stage and in front of people, but the goal is to connect people to God, not to attract attention to yourself. If in doubt, bring some spare articles of clothing, and feel free to ask some of the leaders (same gender) or text a photo to a trusted and honest friend. Please know that our heart is for our team to have freedom to move about in such a way that your articles of clothing will not be a distraction to you or others.</p>\n<h3>General Guidelines</h3>\n<p><strong>Tops / Shirts</strong></p>\n<ul>\n<li>Can be loose fitting — please avoid any that are tight or not loose</li>\n<li>Must be long enough to cover below waist / midriff</li>\n<li>If wearing a graphic tee, think through the graphic and what it says</li>\n<li>When possible, avoid trademarked sports teams, large graphics, large logos, or large brand names <em>(for copyright purposes, to be less distracting, etc.)</em></li>\n<li>Avoid tank tops, low necklines, showing cleavage, and shirts that don't cover armpits + shoulders</li>\n<li>Ladies — avoid white/cream/light colored tops (due to lighting &amp; projection). If directed to wear white/light, wear a dark cami or undershirt underneath.</li>\n</ul>\n<p><strong>Bottoms</strong></p>\n<ul>\n<li>Jeans/slacks — presentable with no big rips or large holes</li>\n<li>Avoid any pants with rips above the knees</li>\n<li>No shorts or leggings as pants</li>\n<li>No short skirts / short dresses — if wearing skirts/dresses, length must be well below the knee</li>\n</ul>\n<p><strong>Footwear</strong></p>\n<ul>\n<li>Sneakers are a great and comfortable option</li>\n<li>Avoid high heels/stilettos — mainly for your safety and comfort</li>\n</ul>",
+          "position": 2
+        },
+        {
+          "label": "Compensation",
+          "body_html": "<h2>Compensation</h2>\n<p>Once you begin serving in our house, apart from Bloom or choir, you will be compensated starting from your 5th confirmed date. This includes shadow dates. Compensation is a small way for us to honor and value the gift you are bringing to our house, as well as the time and effort you put into practicing and preparing these songs.</p>\n<p>If you have any questions, please email <a href=\"mailto:worship@passioncitychurch.com\">worship@passioncitychurch.com</a>.</p>",
+          "position": 3
+        }
+      ]
+    }
+  ],
+  "staff": [
+    {
+      "name": "Jeff Johnson",
+      "role": "Director of Worship",
+      "email": "jeff.johnson@passioncitychurch.com",
+      "photo_url": "static/images/jeff-johnson.jpg"
+    },
+    {
+      "name": "Jourdan Johnson",
+      "role": "Worship Discipleship Lead & Grove Worship Coordinator",
+      "email": "jourdan.johnson@passioncitychurch.com",
+      "photo_url": "static/images/jourdan-johnson.jpg"
+    },
+    {
+      "name": "Ji Lee",
+      "role": "Worship Team Coordinator",
+      "email": "ji.lee@passioncitychurch.com",
+      "photo_url": "static/images/ji-lee.jpg"
+    },
+    {
+      "name": "JD Myers",
+      "role": "Director of Music",
+      "email": "jd.myers@passioncitychurch.com",
+      "photo_url": "static/images/jd-myers.jpg"
+    },
+    {
+      "name": "Chris Donovan",
+      "role": "Worship Discovery and Bloom Students Worship Coordinator",
+      "email": "chris.donovan@passioncitychurch.com",
+      "photo_url": "static/images/chris-donovan.jpg"
+    },
+    {
+      "name": "Paul Whittinghill",
+      "role": "Passion Worship Academy Lead",
+      "email": "paul.whittinghill@passioncitychurch.com",
+      "photo_url": "static/images/paul-whittinghill.jpg"
+    },
+    {
+      "name": "Landon Wolfe",
+      "role": "Worship Coordinator",
+      "email": "landon.wolfe@passioncitychurch.com",
+      "photo_url": "static/images/landon-wolfe.jpg"
+    },
+    {
+      "name": "Savannah Middleton",
+      "role": "Worship Project Coordinator",
+      "email": "savannah.middleton@passioncitychurch.com",
+      "photo_url": "static/images/savannah-middleton.jpg"
+    },
+    {
+      "name": "Sam Hernandez",
+      "role": "Music Director Coordinator",
+      "email": "sam.hernandez@passioncitychurch.com",
+      "photo_url": "static/images/sam-hernandez.jpg"
+    },
+    {
+      "name": "JJ Hasulube",
+      "role": "Worship Resident",
+      "email": "",
+      "photo_url": "static/images/jj-hasulube.jpg"
+    }
+  ]
+}

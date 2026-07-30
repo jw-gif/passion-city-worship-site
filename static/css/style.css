@@ -917,3 +917,172 @@ footer a:hover { color: var(--accent); }
   color: var(--accent);
   background: rgba(44,172,227,0.03);
 }
+
+/* =============================================
+   Staff login control (sidebar footer)
+   ============================================= */
+.sidebar-admin {
+  display: block;
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.18);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.sidebar-admin:hover,
+.sidebar-admin:focus-visible { color: var(--accent); }
+
+/* =============================================
+   Offline / error states
+   ============================================= */
+.stale-banner {
+  display: none;
+  padding: 10px var(--gutter);
+  background: #fff6d8;
+  border-bottom: 1px solid #e8d9a0;
+  color: #6b551a;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+body.is-stale .stale-banner { display: block; }
+
+.load-error {
+  padding: clamp(60px, 12vh, 140px) var(--gutter);
+  max-width: 620px;
+}
+.load-error h2 {
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+.load-error p { color: var(--gray-600); font-size: 0.95rem; }
+
+.editor-toast--error {
+  background: #8c1c1c;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  max-width: min(420px, calc(100vw - 56px));
+  line-height: 1.45;
+}
+
+/* Dim a staff photo while its replacement uploads */
+.staff-card.is-uploading .staff-card__photo,
+.staff-card.is-uploading .staff-card__photo-placeholder {
+  opacity: 0.45;
+  filter: saturate(0.4);
+}
+
+/* =============================================
+   Staff sign-in dialog
+   ============================================= */
+.auth-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.auth-modal[hidden] { display: none; }
+.auth-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(13,13,13,0.55);
+  backdrop-filter: blur(2px);
+}
+.auth-modal__panel {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--white);
+  border-radius: 12px;
+  padding: 30px 28px 26px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.3);
+}
+.auth-modal__panel h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+.auth-modal__hint {
+  font-size: 0.78rem;
+  color: var(--gray-600);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.auth-modal label {
+  display: block;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gray-600);
+  margin-bottom: 6px;
+}
+.auth-modal input {
+  width: 100%;
+  font-family: inherit;
+  font-size: 0.92rem;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--gray-200);
+  border-radius: 6px;
+  background: var(--off-white);
+  color: var(--black);
+}
+.auth-modal input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--white);
+}
+.auth-modal__error {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #8c1c1c;
+  background: #fdecec;
+  border-radius: 6px;
+  padding: 9px 11px;
+  margin-bottom: 16px;
+}
+.auth-modal__error[hidden] { display: none; }
+.auth-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+.auth-modal__cancel,
+.auth-modal__submit {
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.15s;
+}
+.auth-modal__cancel { background: rgba(0,0,0,0.07); color: var(--black); }
+.auth-modal__cancel:hover { background: rgba(0,0,0,0.13); }
+.auth-modal__submit { background: var(--accent); color: #fff; }
+.auth-modal__submit:hover:not(:disabled) { background: var(--accent-dark); }
+.auth-modal__submit:disabled { opacity: 0.6; cursor: default; }
+
+@media (max-width: 720px) {
+  /* .page-wrap already clears the fixed mobile bar, so the banner needs no
+     extra offset here. */
+  .editor-toast { bottom: 80px; left: 16px; right: 16px; }
+}

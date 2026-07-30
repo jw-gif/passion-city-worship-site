@@ -3,13 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Passion City Worship Team</title>
+  <meta name="description" content="Everything you need to know about serving on the Passion City Church worship team — staff directory, scheduling, on-site logistics, and team guidelines.">
+
+  <!-- Internal team handbook: reachable by link, kept out of search results. -->
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Passion City Worship Team">
+  <meta property="og:description" content="Everything you need to know about serving on our worship team.">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="static/favicon.svg">
   <link rel="stylesheet" href="static/css/style.css">
 </head>
 <body>
 
   <!-- ===== SIDEBAR NAV ===== -->
-  <nav class="sidebar" id="sidebar">
+  <nav class="sidebar" id="sidebar" aria-label="Handbook sections">
     <div class="sidebar-top">
       <div class="sidebar-logo">
         <span class="sidebar-logo__org">Passion City Church</span>
@@ -17,24 +32,20 @@
       </div>
     </div>
 
-    <ul class="sidebar-nav" id="sidebarNav">
-      <li data-for="welcome">    <a href="#welcome"      class="sidebar-link">Welcome</a></li>
-      <li data-for="staff">      <a href="#staff"        class="sidebar-link">Staff Directory</a></li>
-      <li data-for="how-it-works"><a href="#how-it-works" class="sidebar-link">How It Works</a></li>
-      <li data-for="on-site">    <a href="#on-site"      class="sidebar-link">On-Site Info</a></li>
-      <li data-for="team-life">  <a href="#team-life"    class="sidebar-link">Team Life</a></li>
-      <li data-for="guidelines"> <a href="#guidelines"   class="sidebar-link">Guidelines</a></li>
-    </ul>
+    <!-- Built from the database so renamed and added sections stay in sync. -->
+    <ul class="sidebar-nav" id="sidebarNav"></ul>
 
     <div class="sidebar-footer">
       <a href="mailto:worship@passioncitychurch.com">worship@<br>passioncitychurch.com</a>
+      <button type="button" class="sidebar-admin" id="adminToggle">Staff login</button>
     </div>
   </nav>
 
   <!-- Mobile top bar -->
   <div class="mobile-bar">
     <span class="mobile-bar__logo">Passion City Worship</span>
-    <button class="mobile-bar__toggle" id="menuToggle" aria-label="Open menu">
+    <button class="mobile-bar__toggle" id="menuToggle" aria-label="Open menu"
+            aria-controls="sidebar" aria-expanded="false">
       <span></span><span></span><span></span>
     </button>
   </div>
@@ -42,113 +53,13 @@
   <!-- ===== MAIN CONTENT ===== -->
   <div class="page-wrap">
 
-    <!-- WELCOME -->
-    <section id="welcome" class="section">
-      <div class="section-hero">
-        <div class="section-hero__inner">
-          <span class="eyebrow">Passion City Church</span>
-          <h1>Welcome to<br><em>the worship team</em></h1>
-          <p class="hero-sub">Everything you need to know about serving on our team.</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="section-body__inner">
-          <div id="content-welcome" class="content-body welcome-letter">
-            <p class="loading">Loading&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <div class="stale-banner" role="status">
+      Showing a saved offline copy &mdash; some details may be out of date.
+    </div>
 
-    <!-- STAFF DIRECTORY -->
-    <section id="staff" class="section">
-      <div class="section-header">
-        <div class="section-header__inner">
-          <span class="eyebrow">Our Team</span>
-          <h2>Staff Directory</h2>
-          <p>Your leads and coordinators across all locations.</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="section-body__inner">
-          <div id="content-staff">
-            <p class="loading">Loading&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- HOW IT WORKS -->
-    <section id="how-it-works" class="section">
-      <div class="section-header">
-        <div class="section-header__inner">
-          <span class="eyebrow">Getting Started</span>
-          <h2>How It Works</h2>
-          <p>Shadowing, scheduling, songs, and rehearsals.</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="section-body__inner">
-          <div id="content-how-it-works" class="sections-grid">
-            <p class="loading">Loading&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ON-SITE INFO -->
-    <section id="on-site" class="section">
-      <div class="section-header">
-        <div class="section-header__inner">
-          <span class="eyebrow">Logistics</span>
-          <h2>On-Site Info</h2>
-          <p>Availability, call times, cancellations, and parking at every location.</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="section-body__inner">
-          <div id="content-on-site" class="sections-grid">
-            <p class="loading">Loading&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TEAM LIFE -->
-    <section id="team-life" class="section">
-      <div class="section-header">
-        <div class="section-header__inner">
-          <span class="eyebrow">Community</span>
-          <h2>Team Life</h2>
-          <p>IEMs, wristbands, green room, seating, and stage presence.</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="section-body__inner">
-          <div id="content-team-life" class="sections-grid">
-            <p class="loading">Loading&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- GUIDELINES -->
-    <section id="guidelines" class="section">
-      <div class="section-header">
-        <div class="section-header__inner">
-          <span class="eyebrow">Expectations</span>
-          <h2>Guidelines</h2>
-          <p>FOBs &amp; credentials, dress code, and compensation.</p>
-        </div>
-      </div>
-      <div class="section-body">
-        <div class="section-body__inner">
-          <div id="content-guidelines" class="sections-grid">
-            <p class="loading">Loading&hellip;</p>
-          </div>
-        </div>
-      </div>
-    </section>
+    <div id="sections">
+      <p class="loading">Loading&hellip;</p>
+    </div>
 
     <footer>
       <p>Passion City Church &mdash; <a href="mailto:worship@passioncitychurch.com">worship@passioncitychurch.com</a></p>
@@ -158,35 +69,38 @@
 
   <!-- Format toolbar (hidden until edit mode + selection) -->
   <div id="format-toolbar" class="format-toolbar" aria-hidden="true">
-    <button data-cmd="bold"          title="Bold"><b>B</b></button>
-    <button data-cmd="italic"        title="Italic"><i>I</i></button>
+    <button type="button" data-cmd="bold"         title="Bold" aria-label="Bold"><b>B</b></button>
+    <button type="button" data-cmd="italic"       title="Italic" aria-label="Italic"><i>I</i></button>
     <div class="toolbar-sep"></div>
-    <button data-cmd="h2"            title="Heading">H2</button>
-    <button data-cmd="h3"            title="Sub-heading">H3</button>
-    <button data-cmd="p"             title="Body text">¶</button>
+    <button type="button" data-cmd="h2"           title="Heading" aria-label="Heading">H2</button>
+    <button type="button" data-cmd="h3"           title="Sub-heading" aria-label="Sub-heading">H3</button>
+    <button type="button" data-cmd="p"            title="Body text" aria-label="Body text">&para;</button>
     <div class="toolbar-sep"></div>
-    <button data-cmd="ul"            title="Bullet list">&#8226;</button>
-    <button data-cmd="ol"            title="Numbered list">1.</button>
+    <button type="button" data-cmd="ul"           title="Bullet list" aria-label="Bullet list">&#8226;</button>
+    <button type="button" data-cmd="ol"           title="Numbered list" aria-label="Numbered list">1.</button>
     <div class="toolbar-sep"></div>
-    <button data-cmd="removeFormat"  title="Clear formatting">T&#x0336;</button>
+    <button type="button" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">T&#x0336;</button>
   </div>
 
-  <!-- Floating edit / save / cancel button -->
-  <div class="edit-fab" id="editFab">
+  <!-- Floating edit / save / cancel button — revealed only for signed-in staff -->
+  <div class="edit-fab" id="editFab" hidden>
     <div class="edit-fab__idle" id="fabIdle">
-      <button class="edit-fab__btn" id="editBtn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <button type="button" class="edit-fab__btn" id="editBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit
       </button>
     </div>
     <div class="edit-fab__active" id="fabActive" hidden>
-      <button class="edit-fab__cancel" id="cancelBtn">Cancel</button>
-      <button class="edit-fab__save"   id="saveBtn">Save changes</button>
+      <button type="button" class="edit-fab__cancel" id="cancelBtn">Cancel</button>
+      <button type="button" class="edit-fab__save"   id="saveBtn">Save changes</button>
     </div>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="js/load-content.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/sanitize.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/site.js"></script>
   <script src="js/editor.js"></script>
+  <script src="js/auth-ui.js"></script>
 </body>
 </html>

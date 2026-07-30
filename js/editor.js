@@ -1,600 +1,575 @@
 /* =============================================
-   In-place Editor
-   — Whole-section add / remove
-   — Section header + nav link editing
-   — Content block add / remove
-   — Staff CRUD
-   — A/B section color management
-   — localStorage persistence, no server
+   In-place editor
+
+   Same interaction as before — click Edit, change things on the page, save —
+   but changes now go to the database, so everyone sees them. The editor is
+   only reachable by a signed-in editor, and only when the page is showing
+   live data (never when it fell back to the bundled snapshot, which would
+   otherwise let a stale copy overwrite the real content).
    ============================================= */
+(function () {
+  'use strict';
 
-const STORE = 'pcc-worship';
-// Saved shape:
-// {
-//   sectionHeaders: { [id]: { eyebrow, title, desc } },
-//   deletedSections: ['section-id', ...],
-//   custom: [{ id, eyebrow, title, desc, blocks:[{label,html}] }],
-//   content: { 'content-welcome': html, [contentId]: [{label,html}] },
-//   staff: [{ name, role, email, photo }]
-// }
+  const api = window.PCCApi;
+  const site = window.PCCSite;
 
-// Built-in sections (excluding #welcome which is fixed hero, #staff which is data-driven)
-const BUILTIN_EDITABLE = ['how-it-works','on-site','team-life','guidelines'];
-const CONTENT_GRID_IDS = ['content-how-it-works','content-on-site','content-team-life','content-guidelines'];
+  let editMode = false;
+  let snapshot = null; // data-level snapshot, used by Cancel
+  let saving = false;
 
-let editMode = false;
-let snapshot = {};
+  const fab = () => document.getElementById('editFab');
+  const navLinkFor = id =>
+    document.querySelector(`#sidebarNav li[data-for="${id}"] .sidebar-link`);
 
-/* ═══════════════════════════════════════════
-   A/B SECTION COLORS
-   ═══════════════════════════════════════════ */
+  /* ═══════════════════════════════════════════
+     TOAST
+     ═══════════════════════════════════════════ */
 
-function updateSectionColors() {
-  const sections = [...document.querySelectorAll('.page-wrap .section')]
-    .filter(s => s.id !== 'welcome');
-  sections.forEach((s, i) => s.classList.toggle('section--alt', i % 2 !== 0));
-}
-
-/* ═══════════════════════════════════════════
-   PERSISTENCE
-   ═══════════════════════════════════════════ */
-
-function loadStore() {
-  try { return JSON.parse(localStorage.getItem(STORE) || '{}'); } catch { return {}; }
-}
-
-function persist() {
-  const store = loadStore();
-
-  // Section headers
-  store.sectionHeaders = store.sectionHeaders || {};
-  document.querySelectorAll('.section:not(#welcome):not(#staff)').forEach(section => {
-    store.sectionHeaders[section.id] = {
-      eyebrow: section.querySelector('.section-header .eyebrow')?.textContent?.trim() || '',
-      title:   section.querySelector('.section-header h2')?.textContent?.trim() || '',
-      desc:    section.querySelector('.section-header p')?.textContent?.trim() || '',
-    };
-  });
-
-  // Content blocks
-  store.content = store.content || {};
-  const welcome = document.getElementById('content-welcome');
-  if (welcome) store.content['content-welcome'] = welcome.innerHTML;
-
-  CONTENT_GRID_IDS.forEach(cid => {
-    const grid = document.getElementById(cid);
-    if (!grid) return;
-    store.content[cid] = [...grid.querySelectorAll('.section-block')].map(block => ({
-      label: block.querySelector('.section-label')?.textContent?.trim() || '',
-      html:  block.querySelector('.content-body')?.innerHTML || '',
-    }));
-  });
-
-  // Custom sections
-  store.custom = [...document.querySelectorAll('.section.section--custom')].map(section => {
-    const cid = 'content-' + section.id;
-    const grid = document.getElementById(cid);
-    return {
-      id:     section.id,
-      eyebrow: section.querySelector('.section-header .eyebrow')?.textContent?.trim() || '',
-      title:   section.querySelector('.section-header h2')?.textContent?.trim() || '',
-      desc:    section.querySelector('.section-header p')?.textContent?.trim() || '',
-      blocks: grid
-        ? [...grid.querySelectorAll('.section-block')].map(b => ({
-            label: b.querySelector('.section-label')?.textContent?.trim() || '',
-            html:  b.querySelector('.content-body')?.innerHTML || '',
-          }))
-        : [],
-    };
-  });
-
-  // Staff
-  const staffGrid = document.querySelector('#content-staff .staff-grid');
-  if (staffGrid) {
-    store.staff = [...staffGrid.querySelectorAll('.staff-card')].map(card => ({
-      name:  card.querySelector('.staff-card__name')?.textContent?.trim()  || '',
-      role:  card.querySelector('.staff-card__role')?.textContent?.trim()  || '',
-      email: card.querySelector('.staff-card__email')?.textContent?.trim() || '',
-      photo: card.querySelector('img.staff-card__photo')?.getAttribute('src') || '',
-    }));
-  }
-
-  // Track which built-ins are deleted
-  store.deletedSections = BUILTIN_EDITABLE.filter(id =>
-    !document.getElementById(id)
-  );
-
-  localStorage.setItem(STORE, JSON.stringify(store));
-}
-
-/** Called by load-content.js after all markdown loads */
-function applySaved() {
-  const store = loadStore();
-
-  // Restore section headers
-  if (store.sectionHeaders) {
-    Object.entries(store.sectionHeaders).forEach(([id, data]) => {
-      const section = document.getElementById(id);
-      if (!section) return;
-      const eyebrow = section.querySelector('.section-header .eyebrow');
-      const h2      = section.querySelector('.section-header h2');
-      const desc    = section.querySelector('.section-header p');
-      if (eyebrow) eyebrow.textContent = data.eyebrow;
-      if (h2)      h2.textContent      = data.title;
-      if (desc)    desc.textContent    = data.desc;
-      // Sync nav link
-      const link = document.querySelector(`.sidebar-link[href="#${id}"]`);
-      if (link && data.title) link.textContent = data.title;
-    });
-  }
-
-  // Restore content blocks (welcome + grids)
-  if (store.content) {
-    const welcome = document.getElementById('content-welcome');
-    if (welcome && store.content['content-welcome']) {
-      welcome.innerHTML = store.content['content-welcome'];
+  function showToast(message, isError) {
+    let toast = document.getElementById('editor-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'editor-toast';
+      toast.className = 'editor-toast';
+      toast.setAttribute('role', 'status');
+      toast.setAttribute('aria-live', 'polite');
+      document.body.appendChild(toast);
     }
-    CONTENT_GRID_IDS.forEach(cid => {
-      const blocks = store.content[cid];
-      if (!Array.isArray(blocks)) return;
-      const grid = document.getElementById(cid);
-      if (!grid) return;
-      grid.innerHTML = '';
-      blocks.forEach(({ label, html }) =>
-        grid.appendChild(window.createSectionBlock(label, html))
-      );
+    toast.textContent = message;
+    toast.classList.toggle('editor-toast--error', !!isError);
+    toast.classList.add('show');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('show'), isError ? 6000 : 2400);
+  }
+
+  /* ═══════════════════════════════════════════
+     EDITABLE FIELDS
+     ═══════════════════════════════════════════ */
+
+  function makeEditable(node, opts = {}) {
+    if (!node) return;
+    node.contentEditable = 'true';
+    node.spellcheck = opts.spellcheck !== false;
+    if (opts.plain) node.dataset.plainText = '1';
+  }
+
+  /* Pasting into a plain-text field (labels, headings, roles) should not drag
+     along the source document's markup. */
+  document.addEventListener('paste', e => {
+    if (!editMode) return;
+    const field = e.target.closest?.('[contenteditable="true"]');
+    if (!field) return;
+    if (!field.dataset.plainText) return;
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text.replace(/\s*\n\s*/g, ' '));
+  });
+
+  function selectAll(node) {
+    const range = document.createRange();
+    range.selectNodeContents(node);
+    const selection = window.getSelection();
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  /* ═══════════════════════════════════════════
+     SECTION HEADERS + NAV
+     ═══════════════════════════════════════════ */
+
+  function enableSectionHeader(section) {
+    const isHero = section.dataset.kind === 'hero';
+    const scope = isHero ? '.section-hero' : '.section-header';
+    const eyebrow = section.querySelector(`${scope} .eyebrow`);
+    const heading = section.querySelector(`${scope} ${isHero ? 'h1' : 'h2'}`);
+    const description = isHero
+      ? section.querySelector('.hero-sub')
+      : section.querySelector('.section-header__inner > p');
+
+    makeEditable(eyebrow, { plain: true, spellcheck: false });
+    makeEditable(heading, { plain: true });
+    makeEditable(description, { plain: true });
+
+    // Keep the sidebar label in step with the heading, but only while the two
+    // still agree — once someone edits the label directly, leave it alone.
+    const link = navLinkFor(section.id);
+    if (heading && link && link.textContent.trim() === heading.textContent.trim()) {
+      heading.addEventListener('input', () => {
+        link.textContent = heading.textContent.trim();
+      });
+    }
+  }
+
+  function enableNavEditing() {
+    document.querySelectorAll('#sidebarNav .sidebar-link').forEach(link => {
+      makeEditable(link, { plain: true, spellcheck: false });
+      // Don't navigate away mid-edit.
+      link.addEventListener('click', e => {
+        if (editMode) e.preventDefault();
+      });
     });
   }
 
-  // Remove deleted built-in sections
-  if (store.deletedSections) {
-    store.deletedSections.forEach(id => {
-      const section = document.getElementById(id);
-      if (section) section.remove();
-      const navItem = document.querySelector(`#sidebarNav li[data-for="${id}"]`);
+  function addSectionDeleteButton(section) {
+    const host = section.querySelector('.section-header') || section.querySelector('.section-hero');
+    if (!host) return;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ec section-delete-btn';
+    button.innerHTML =
+      '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">' +
+      '<path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" ' +
+      'stroke-linecap="round" fill="none"/></svg> Remove section';
+    button.addEventListener('click', () => {
+      const remaining = document.querySelectorAll('#sections .section').length;
+      if (remaining <= 1) {
+        showToast('A site needs at least one section.', true);
+        return;
+      }
+      const heading = section.querySelector('h1, h2');
+      const name = heading ? heading.textContent.trim() : 'this section';
+      if (!confirm(`Remove "${name}" and everything in it?`)) return;
+      const navItem = document.querySelector(`#sidebarNav li[data-for="${section.id}"]`);
       if (navItem) navItem.remove();
+      section.remove();
+      site.updateSectionColors();
     });
+    host.appendChild(button);
   }
 
-  // Inject custom sections
-  if (store.custom && store.custom.length) {
-    const footer = document.querySelector('.page-wrap footer');
-    store.custom.forEach(data => {
-      if (!document.getElementById(data.id)) {
-        const section = buildSection(data);
-        footer.parentNode.insertBefore(section, footer);
-        addNavLink(data.id, data.title);
+  /* ═══════════════════════════════════════════
+     CONTENT BLOCKS
+     ═══════════════════════════════════════════ */
+
+  function enableBlock(block) {
+    makeEditable(block.querySelector('.section-label'), { plain: true, spellcheck: false });
+    makeEditable(block.querySelector('.content-body'));
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'ec block-delete-btn';
+    remove.title = 'Remove block';
+    remove.setAttribute('aria-label', 'Remove block');
+    remove.innerHTML =
+      '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">' +
+      '<path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" ' +
+      'stroke-linecap="round" fill="none"/></svg>';
+    remove.addEventListener('click', () => {
+      if (confirm('Remove this block?')) block.remove();
+    });
+    block.appendChild(remove);
+  }
+
+  function initBlockControls(section) {
+    const grid = document.getElementById(`content-${section.id}`);
+    if (!grid || section.dataset.kind !== 'grid') return;
+
+    grid.querySelectorAll('.section-block').forEach(enableBlock);
+
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'ec add-block-btn';
+    add.innerHTML = '<span class="add-block-icon">+</span> Add block';
+    add.addEventListener('click', () => {
+      const block = site.buildBlock('Label', '<p>Enter content…</p>');
+      enableBlock(block);
+      grid.insertBefore(block, add);
+      const label = block.querySelector('.section-label');
+      if (label) {
+        label.focus();
+        selectAll(label);
       }
     });
+    grid.appendChild(add);
   }
 
-  // Restore custom section content blocks
-  if (store.custom) {
-    store.custom.forEach(data => {
-      const grid = document.getElementById('content-' + data.id);
-      if (!grid || !data.blocks) return;
-      grid.innerHTML = '';
-      data.blocks.forEach(({ label, html }) =>
-        grid.appendChild(window.createSectionBlock(label, html))
+  /* ═══════════════════════════════════════════
+     STAFF
+     ═══════════════════════════════════════════ */
+
+  /** Swap in a new photo node (image or initials placeholder) and rewire it. */
+  function setCardPhoto(card, src, name) {
+    const existing = card.querySelector('.staff-card__photo, .staff-card__photo-placeholder');
+    let node;
+    if (src) {
+      node = document.createElement('img');
+      node.className = 'staff-card__photo';
+      node.src = src;
+      node.alt = name || '';
+      node.loading = 'lazy';
+    } else {
+      node = document.createElement('div');
+      node.className = 'staff-card__photo-placeholder';
+      node.textContent = site.initials(name);
+    }
+    if (existing) existing.replaceWith(node);
+    else card.prepend(node);
+    if (editMode) wirePhoto(card, node);
+    return node;
+  }
+
+  function wirePhoto(card, node) {
+    const photo = node || card.querySelector('.staff-card__photo, .staff-card__photo-placeholder');
+    if (!photo || photo.dataset.wired) return;
+    photo.dataset.wired = '1';
+    photo.title = 'Click to change photo';
+    photo.style.cursor = 'pointer';
+    photo.addEventListener('click', () => choosePhoto(card));
+  }
+
+  function choosePhoto(card) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/jpeg,image/png,image/webp,image/gif';
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('That image is over 5 MB — please pick a smaller one.', true);
+        return;
+      }
+
+      const name = card.querySelector('.staff-card__name')?.textContent.trim() || '';
+      const previous = card.dataset.photoUrl || '';
+      const preview = URL.createObjectURL(file);
+
+      card.classList.add('is-uploading');
+      setCardPhoto(card, preview, name);
+
+      try {
+        const url = await api.uploadPhoto(file);
+        card.dataset.photoUrl = url;
+        setCardPhoto(card, url, name);
+        showToast('Photo uploaded — remember to save.');
+      } catch (err) {
+        card.dataset.photoUrl = previous;
+        setCardPhoto(card, site.photoSrc(previous), name);
+        showToast(err.message || 'That photo could not be uploaded.', true);
+      } finally {
+        URL.revokeObjectURL(preview);
+        card.classList.remove('is-uploading');
+      }
+    });
+    input.click();
+  }
+
+  function enableStaffCard(card) {
+    makeEditable(card.querySelector('.staff-card__name'), { plain: true, spellcheck: false });
+    makeEditable(card.querySelector('.staff-card__role'), { plain: true, spellcheck: false });
+
+    // An anchor can't be typed into comfortably; swap it for a span while editing.
+    const link = card.querySelector('a.staff-card__email');
+    if (link) {
+      const span = document.createElement('span');
+      span.className = 'staff-card__email';
+      span.textContent = link.textContent;
+      link.replaceWith(span);
+    }
+    makeEditable(card.querySelector('span.staff-card__email'), {
+      plain: true,
+      spellcheck: false,
+    });
+
+    wirePhoto(card);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'ec staff-delete-btn';
+    remove.title = 'Remove';
+    remove.setAttribute('aria-label', 'Remove staff member');
+    remove.innerHTML =
+      '<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true">' +
+      '<path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" ' +
+      'stroke-linecap="round" fill="none"/></svg>';
+    remove.addEventListener('click', () => {
+      const name = card.querySelector('.staff-card__name')?.textContent.trim() || 'this person';
+      if (confirm(`Remove ${name} from the directory?`)) card.remove();
+    });
+    card.appendChild(remove);
+  }
+
+  function initStaffControls() {
+    const grid = document.querySelector('.staff-grid');
+    if (!grid) return;
+    grid.querySelectorAll('.staff-card').forEach(enableStaffCard);
+
+    const add = document.createElement('div');
+    add.className = 'ec staff-add-card';
+    add.setAttribute('role', 'button');
+    add.tabIndex = 0;
+    add.innerHTML =
+      '<div class="staff-add-card__icon">+</div><span>Add staff member</span>';
+    const addCard = () => {
+      const card = site.buildStaffCard({ name: 'Name', role: 'Role', email: '', photo_url: '' });
+      grid.insertBefore(card, add);
+      enableStaffCard(card);
+      const name = card.querySelector('.staff-card__name');
+      if (name) {
+        name.focus();
+        selectAll(name);
+      }
+    };
+    add.addEventListener('click', addCard);
+    add.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        addCard();
+      }
+    });
+    grid.appendChild(add);
+  }
+
+  /* ═══════════════════════════════════════════
+     ADD SECTION
+     ═══════════════════════════════════════════ */
+
+  function addAddSectionButton() {
+    const host = document.getElementById('sections');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'ec add-section-btn';
+    button.innerHTML =
+      '<span style="font-size:1.2rem;font-weight:300">+</span> Add new section';
+    button.addEventListener('click', () => {
+      const id = `custom-${Date.now()}`;
+      const data = {
+        id,
+        kind: 'grid',
+        eyebrow: 'Category',
+        title: 'New Section',
+        nav_label: 'New Section',
+        description: 'Section description',
+        is_builtin: false,
+        blocks: [],
+      };
+      const node = site.buildSection(data, []);
+      host.appendChild(node);
+      document.getElementById('sidebarNav').appendChild(site.buildNavItem(id, data.nav_label));
+
+      site.updateSectionColors();
+      enableSectionHeader(node);
+      initBlockControls(node);
+      addSectionDeleteButton(node);
+      enableNavEditing();
+
+      const heading = node.querySelector('h2');
+      if (heading) {
+        heading.focus();
+        selectAll(heading);
+      }
+      node.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Keep the button last.
+      host.appendChild(button);
+    });
+    host.appendChild(button);
+  }
+
+  /* ═══════════════════════════════════════════
+     ENTER / EXIT
+     ═══════════════════════════════════════════ */
+
+  function enterEdit() {
+    if (editMode) return;
+    if (!api.isSignedIn()) {
+      showToast('Please sign in to edit.', true);
+      return;
+    }
+    if (!site.isLive) {
+      showToast(
+        'Editing is unavailable while the site is showing offline content. Please refresh and try again.',
+        true
       );
+      return;
+    }
+
+    editMode = true;
+    snapshot = site.serializeSite();
+    document.body.classList.add('edit-mode');
+
+    document.querySelectorAll('#sections .section').forEach(section => {
+      enableSectionHeader(section);
+      initBlockControls(section);
+      addSectionDeleteButton(section);
+
+      if (section.dataset.kind === 'hero') {
+        makeEditable(document.getElementById(`content-${section.id}`));
+      }
+    });
+
+    initStaffControls();
+    enableNavEditing();
+    addAddSectionButton();
+
+    document.getElementById('fabIdle').hidden = true;
+    document.getElementById('fabActive').hidden = false;
+  }
+
+  function teardownEditUi() {
+    document.body.classList.remove('edit-mode');
+    document.querySelectorAll('.ec').forEach(node => node.remove());
+    document.querySelectorAll('[contenteditable]').forEach(node => {
+      node.removeAttribute('contenteditable');
+      node.removeAttribute('spellcheck');
+      delete node.dataset.plainText;
+    });
+    document.getElementById('fabIdle').hidden = false;
+    document.getElementById('fabActive').hidden = true;
+    hideToolbar();
+  }
+
+  async function saveChanges() {
+    if (saving) return;
+    const payload = site.serializeSite();
+
+    if (!payload.sections.length) {
+      showToast('A site needs at least one section.', true);
+      return;
+    }
+
+    saving = true;
+    const saveButton = document.getElementById('saveBtn');
+    const originalLabel = saveButton.textContent;
+    saveButton.disabled = true;
+    saveButton.textContent = 'Saving…';
+
+    try {
+      await api.rpc('save_site', { payload });
+      editMode = false;
+      teardownEditUi();
+      // Re-read from the database so what's on screen is exactly what's stored.
+      await site.reload();
+      showToast('Changes saved — everyone can see them now.');
+    } catch (err) {
+      // Stay in edit mode so nothing typed is lost.
+      console.error('[pcc] Save failed:', err);
+      showToast(err.message || 'Your changes could not be saved.', true);
+    } finally {
+      saving = false;
+      saveButton.disabled = false;
+      saveButton.textContent = originalLabel;
+    }
+  }
+
+  function cancelChanges() {
+    if (saving) return;
+    if (!confirm('Discard unsaved changes?')) return;
+    editMode = false;
+    teardownEditUi();
+    if (snapshot) site.renderSite(snapshot);
+    site.initScrollSpy();
+    snapshot = null;
+  }
+
+  /* ═══════════════════════════════════════════
+     FORMAT TOOLBAR
+     ═══════════════════════════════════════════ */
+
+  const toolbar = document.getElementById('format-toolbar');
+
+  function hideToolbar() {
+    if (!toolbar) return;
+    toolbar.setAttribute('aria-hidden', 'true');
+    toolbar.classList.remove('visible');
+  }
+
+  function showToolbarAt(rect) {
+    toolbar.removeAttribute('aria-hidden');
+    toolbar.classList.add('visible');
+    requestAnimationFrame(() => {
+      let top = rect.top + window.scrollY - toolbar.offsetHeight - 8;
+      let left =
+        rect.left + window.scrollX + rect.width / 2 - toolbar.offsetWidth / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - toolbar.offsetWidth - 8));
+      if (top < window.scrollY + 8) top = rect.bottom + window.scrollY + 8;
+      toolbar.style.top = `${top}px`;
+      toolbar.style.left = `${left}px`;
     });
   }
 
-  updateSectionColors();
-}
-window.__editorApplySaved = applySaved;
+  document.addEventListener('selectionchange', () => {
+    if (!editMode || !toolbar) return;
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+      hideToolbar();
+      return;
+    }
+    let node = selection.anchorNode;
+    while (node && node.nodeType !== 1) node = node.parentNode;
+    // Rich formatting only applies to the rich-text bodies.
+    const body = node && node.closest('.content-body[contenteditable="true"]');
+    if (!body) {
+      hideToolbar();
+      return;
+    }
+    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    if (!rect.width) {
+      hideToolbar();
+      return;
+    }
+    showToolbarAt(rect);
+  });
 
-/* ═══════════════════════════════════════════
-   SECTION BUILDER
-   ═══════════════════════════════════════════ */
-
-function buildSection({ id, eyebrow, title, desc, blocks }) {
-  const section = document.createElement('section');
-  section.id = id;
-  section.className = 'section section--custom';
-
-  const contentId = 'content-' + id;
-  section.innerHTML = `
-    <div class="section-header">
-      <div class="section-header__inner">
-        <span class="eyebrow">${eyebrow || 'Category'}</span>
-        <h2>${title || 'New Section'}</h2>
-        <p>${desc || 'Section description'}</p>
-      </div>
-    </div>
-    <div class="section-body">
-      <div class="section-body__inner">
-        <div id="${contentId}" class="sections-grid"></div>
-      </div>
-    </div>
-  `;
-
-  if (blocks && blocks.length) {
-    const grid = section.querySelector('.sections-grid');
-    blocks.forEach(({ label, html }) =>
-      grid.appendChild(window.createSectionBlock(label, html))
-    );
+  if (toolbar) {
+    toolbar.addEventListener('mousedown', e => {
+      const button = e.target.closest('button[data-cmd]');
+      if (!button) return;
+      e.preventDefault();
+      const cmd = button.dataset.cmd;
+      // execCommand is deprecated but remains the only broadly supported way
+      // to format a contenteditable region without shipping an editor library.
+      if (cmd === 'h2') document.execCommand('formatBlock', false, 'h2');
+      else if (cmd === 'h3') document.execCommand('formatBlock', false, 'h3');
+      else if (cmd === 'p') document.execCommand('formatBlock', false, 'p');
+      else if (cmd === 'ul') document.execCommand('insertUnorderedList');
+      else if (cmd === 'ol') document.execCommand('insertOrderedList');
+      else if (cmd === 'removeFormat') {
+        document.execCommand('removeFormat');
+        document.execCommand('formatBlock', false, 'p');
+      } else document.execCommand(cmd);
+    });
   }
 
-  return section;
-}
+  /* ═══════════════════════════════════════════
+     WIRING
+     ═══════════════════════════════════════════ */
 
-function addNavLink(id, title) {
-  const nav = document.getElementById('sidebarNav');
-  if (!nav || document.querySelector(`#sidebarNav li[data-for="${id}"]`)) return;
-  const li = document.createElement('li');
-  li.dataset.for = id;
-  const a = document.createElement('a');
-  a.href = `#${id}`;
-  a.className = 'sidebar-link';
-  a.textContent = title || 'New Section';
-  li.appendChild(a);
-  nav.appendChild(li);
-}
-
-/* ═══════════════════════════════════════════
-   SNAPSHOT (for cancel)
-   ═══════════════════════════════════════════ */
-
-function takeSnapshot() {
-  snapshot.pageHTML    = document.querySelector('.page-wrap').innerHTML;
-  snapshot.navHTML     = document.getElementById('sidebarNav').innerHTML;
-}
-
-function restoreSnapshot() {
-  document.querySelector('.page-wrap').innerHTML    = snapshot.pageHTML;
-  document.getElementById('sidebarNav').innerHTML  = snapshot.navHTML;
-  updateSectionColors();
-}
-
-/* ═══════════════════════════════════════════
-   EDIT MODE
-   ═══════════════════════════════════════════ */
-
-function enterEdit() {
-  editMode = true;
-  takeSnapshot();
-  document.body.classList.add('edit-mode');
-
-  // Welcome content
-  const welcome = document.getElementById('content-welcome');
-  if (welcome) { welcome.contentEditable = 'true'; welcome.spellcheck = true; }
-
-  // All non-welcome, non-staff sections
-  document.querySelectorAll('.section:not(#welcome):not(#staff)').forEach(section => {
-    enableSectionHeader(section);
-    initBlockControls('content-' + section.id);
-    addSectionDeleteBtn(section);
-  });
-
-  // Staff
-  initStaffControls();
-
-  // "Add section" button before footer
-  const addBtn = document.createElement('button');
-  addBtn.className = 'ec add-section-btn';
-  addBtn.innerHTML = `<span style="font-size:1.2rem;font-weight:300">+</span> Add new section`;
-  addBtn.addEventListener('click', () => {
-    const id = 'custom-' + Date.now();
-    const data = { id, eyebrow: 'Category', title: 'New Section', desc: 'Section description', blocks: [] };
-    const section = buildSection(data);
-    section.classList.add('section--custom');
-    const footer = document.querySelector('.page-wrap footer');
-    footer.parentNode.insertBefore(section, footer);
-    addNavLink(id, data.title);
-    updateSectionColors();
-    // Wire up editing on the new section
-    enableSectionHeader(section);
-    initBlockControls('content-' + id);
-    addSectionDeleteBtn(section);
-    // Focus the h2
-    const h2 = section.querySelector('h2');
-    if (h2) { h2.focus(); selectAll(h2); }
-    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-  const footer = document.querySelector('.page-wrap footer');
-  footer.parentNode.insertBefore(addBtn, footer);
-
-  document.getElementById('fabIdle').hidden   = true;
-  document.getElementById('fabActive').hidden = false;
-}
-
-function exitEdit(doSave) {
-  if (doSave) {
-    persist();
-    showToast('Changes saved');
-  } else {
-    restoreSnapshot();
+  function syncFabVisibility() {
+    const node = fab();
+    if (!node) return;
+    const allowed = api.isSignedIn() && site.isLive;
+    node.hidden = !allowed;
+    if (!allowed && editMode) {
+      editMode = false;
+      teardownEditUi();
+    }
   }
 
-  editMode = false;
-  document.body.classList.remove('edit-mode');
-
-  // Remove all edit-control elements
-  document.querySelectorAll('.ec').forEach(el => el.remove());
-
-  // Remove contenteditable from all fields
-  document.querySelectorAll('[contenteditable]').forEach(el => {
-    el.removeAttribute('contenteditable');
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('editBtn')?.addEventListener('click', enterEdit);
+    document.getElementById('saveBtn')?.addEventListener('click', saveChanges);
+    document.getElementById('cancelBtn')?.addEventListener('click', cancelChanges);
+    syncFabVisibility();
   });
 
-  // Restore staff email links
-  document.querySelectorAll('.staff-card').forEach(card => {
-    const span = card.querySelector('span.staff-card__email');
-    if (span) {
-      const addr = span.textContent.trim();
-      const a = document.createElement('a');
-      a.className = 'staff-card__email';
-      a.href = `mailto:${addr}`;
-      a.textContent = addr;
-      span.replaceWith(a);
+  window.addEventListener('pcc:auth', syncFabVisibility);
+  window.addEventListener('pcc:rendered', syncFabVisibility);
+
+  document.addEventListener('keydown', e => {
+    if (!editMode) return;
+    if (e.key === 'Escape') cancelChanges();
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+      e.preventDefault();
+      saveChanges();
     }
   });
 
-  document.getElementById('fabIdle').hidden   = false;
-  document.getElementById('fabActive').hidden = true;
-  hideToolbar();
-}
-
-/* ═══════════════════════════════════════════
-   SECTION HEADER EDITING + NAV SYNC
-   ═══════════════════════════════════════════ */
-
-function enableSectionHeader(section) {
-  const eyebrow = section.querySelector('.section-header .eyebrow');
-  const h2      = section.querySelector('.section-header h2');
-  const desc    = section.querySelector('.section-header p');
-
-  [eyebrow, h2, desc].forEach(el => {
-    if (!el) return;
-    el.contentEditable = 'true';
-    el.spellcheck = false;
+  // Don't let someone wander off mid-edit without warning.
+  window.addEventListener('beforeunload', e => {
+    if (!editMode) return;
+    e.preventDefault();
+    e.returnValue = '';
   });
 
-  // Live-sync the nav link as h2 is typed
-  if (h2) {
-    h2.addEventListener('input', () => {
-      const link = document.querySelector(`.sidebar-link[href="#${section.id}"]`);
-      if (link) link.textContent = h2.textContent;
-    });
-  }
-}
-
-function addSectionDeleteBtn(section) {
-  const btn = document.createElement('button');
-  btn.className = 'ec section-delete-btn';
-  btn.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Remove section`;
-  btn.addEventListener('click', () => {
-    const title = section.querySelector('h2')?.textContent?.trim() || 'this section';
-    if (!confirm(`Remove "${title}"?`)) return;
-    const navItem = document.querySelector(`#sidebarNav li[data-for="${section.id}"]`);
-    if (navItem) navItem.remove();
-    section.remove();
-    updateSectionColors();
-  });
-  const header = section.querySelector('.section-header');
-  if (header) header.appendChild(btn);
-}
-
-/* ═══════════════════════════════════════════
-   BLOCK MANAGEMENT
-   ═══════════════════════════════════════════ */
-
-function initBlockControls(contentId) {
-  const grid = document.getElementById(contentId);
-  if (!grid) return;
-
-  grid.querySelectorAll('.section-block').forEach(enableBlock);
-
-  const addBtn = document.createElement('button');
-  addBtn.className = 'ec add-block-btn';
-  addBtn.innerHTML = `<span class="add-block-icon">+</span> Add block`;
-  addBtn.addEventListener('click', () => {
-    const block = window.createSectionBlock('Label', '<p>Enter content…</p>');
-    enableBlock(block);
-    grid.insertBefore(block, addBtn);
-    const label = block.querySelector('.section-label');
-    if (label) { label.focus(); selectAll(label); }
-  });
-  grid.appendChild(addBtn);
-}
-
-function enableBlock(block) {
-  const label = block.querySelector('.section-label');
-  const body  = block.querySelector('.content-body');
-  if (label) { label.contentEditable = 'true'; label.spellcheck = false; }
-  if (body)  { body.contentEditable  = 'true'; body.spellcheck  = true;  }
-
-  const del = document.createElement('button');
-  del.className = 'ec block-delete-btn';
-  del.title = 'Remove block';
-  del.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-  del.addEventListener('click', () => {
-    if (confirm('Remove this block?')) block.remove();
-  });
-  block.appendChild(del);
-}
-
-function selectAll(el) {
-  const range = document.createRange();
-  range.selectNodeContents(el);
-  const sel = window.getSelection();
-  sel.removeAllRanges();
-  sel.addRange(range);
-}
-
-/* ═══════════════════════════════════════════
-   STAFF MANAGEMENT
-   ═══════════════════════════════════════════ */
-
-function initStaffControls() {
-  const grid = document.querySelector('#content-staff .staff-grid');
-  if (!grid) return;
-  grid.querySelectorAll('.staff-card').forEach(enableStaffCard);
-
-  const addCard = document.createElement('div');
-  addCard.className = 'ec staff-add-card';
-  addCard.innerHTML = `<div class="staff-add-card__icon">+</div><span>Add staff member</span>`;
-  addCard.addEventListener('click', () => {
-    const idx  = grid.querySelectorAll('.staff-card').length;
-    const card = window.buildStaffCard({ name: 'Name', role: 'Role', email: '', photo: '' }, idx);
-    grid.insertBefore(card, addCard);
-    enableStaffCard(card);
-    const nameEl = card.querySelector('.staff-card__name');
-    if (nameEl) { nameEl.focus(); selectAll(nameEl); }
-  });
-  grid.appendChild(addCard);
-}
-
-function enableStaffCard(card) {
-  ['staff-card__name', 'staff-card__role'].forEach(cls => {
-    const el = card.querySelector(`.${cls}`);
-    if (el) { el.contentEditable = 'true'; el.spellcheck = false; }
-  });
-
-  // Swap email link → editable span
-  const emailLink = card.querySelector('a.staff-card__email');
-  if (emailLink) {
-    const span = document.createElement('span');
-    span.className = 'staff-card__email';
-    span.contentEditable = 'true';
-    span.spellcheck = false;
-    span.textContent = emailLink.textContent;
-    emailLink.replaceWith(span);
-  } else {
-    const emailSpan = card.querySelector('span.staff-card__email');
-    if (emailSpan) { emailSpan.contentEditable = 'true'; emailSpan.spellcheck = false; }
-  }
-
-  // Photo click → file picker
-  const photo = card.querySelector('.staff-card__photo, .staff-card__photo-placeholder');
-  if (photo && !photo.dataset.photoWired) {
-    photo.dataset.photoWired = '1';
-    photo.title = 'Click to change photo';
-    photo.style.cursor = 'pointer';
-    photo.addEventListener('click', () => triggerPhotoUpload(card));
-  }
-
-  // Delete
-  const del = document.createElement('button');
-  del.className = 'ec staff-delete-btn';
-  del.title = 'Remove';
-  del.innerHTML = `<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><path d="M1 1l8 8M9 1l-8 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
-  del.addEventListener('click', () => {
-    const name = card.querySelector('.staff-card__name')?.textContent || 'this person';
-    if (confirm(`Remove ${name}?`)) card.remove();
-  });
-  card.appendChild(del);
-}
-
-function triggerPhotoUpload(card) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.addEventListener('change', () => {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = e => {
-      const existing = card.querySelector('.staff-card__photo, .staff-card__photo-placeholder');
-      const img = document.createElement('img');
-      img.className = 'staff-card__photo';
-      img.src = e.target.result;
-      img.alt = card.querySelector('.staff-card__name')?.textContent || '';
-      img.dataset.photoWired = '1';
-      img.title = 'Click to change photo';
-      img.style.cursor = 'pointer';
-      img.addEventListener('click', () => triggerPhotoUpload(card));
-      if (existing) existing.replaceWith(img); else card.prepend(img);
-    };
-    reader.readAsDataURL(file);
-  });
-  input.click();
-}
-
-/* ═══════════════════════════════════════════
-   FORMAT TOOLBAR
-   ═══════════════════════════════════════════ */
-
-const toolbar = document.getElementById('format-toolbar');
-
-function showToolbar() {
-  toolbar.removeAttribute('hidden');
-  toolbar.removeAttribute('aria-hidden');
-  toolbar.classList.add('visible');
-}
-function hideToolbar() {
-  toolbar.setAttribute('aria-hidden', 'true');
-  toolbar.classList.remove('visible');
-}
-function positionToolbar(rect) {
-  requestAnimationFrame(() => {
-    let top  = rect.top + window.scrollY - toolbar.offsetHeight - 8;
-    let left = rect.left + window.scrollX + rect.width / 2 - toolbar.offsetWidth / 2;
-    left = Math.max(8, Math.min(left, window.innerWidth - toolbar.offsetWidth - 8));
-    if (top < window.scrollY + 8) top = rect.bottom + window.scrollY + 8;
-    toolbar.style.top  = top + 'px';
-    toolbar.style.left = left + 'px';
-  });
-}
-
-document.addEventListener('selectionchange', () => {
-  if (!editMode) return;
-  const sel = window.getSelection();
-  if (!sel || sel.isCollapsed || !sel.rangeCount) { hideToolbar(); return; }
-  let node = sel.anchorNode;
-  while (node && node.nodeType !== 1) node = node.parentNode;
-  if (node?.closest('.ec, .section-label, .section-header .eyebrow')) { hideToolbar(); return; }
-  const rect = sel.getRangeAt(0).getBoundingClientRect();
-  if (!rect.width) { hideToolbar(); return; }
-  showToolbar();
-  requestAnimationFrame(() => positionToolbar(rect));
-});
-
-toolbar.addEventListener('mousedown', e => {
-  const btn = e.target.closest('button[data-cmd]');
-  if (!btn) return;
-  e.preventDefault();
-  const cmd = btn.dataset.cmd;
-  if      (cmd === 'h2')           document.execCommand('formatBlock', false, '<h2>');
-  else if (cmd === 'h3')           document.execCommand('formatBlock', false, '<h3>');
-  else if (cmd === 'p')            document.execCommand('formatBlock', false, '<p>');
-  else if (cmd === 'ul')           document.execCommand('insertUnorderedList');
-  else if (cmd === 'ol')           document.execCommand('insertOrderedList');
-  else if (cmd === 'removeFormat') { document.execCommand('removeFormat'); document.execCommand('formatBlock', false, '<p>'); }
-  else                             document.execCommand(cmd);
-});
-
-/* ═══════════════════════════════════════════
-   TOAST
-   ═══════════════════════════════════════════ */
-
-function showToast(msg) {
-  let t = document.getElementById('editor-toast');
-  if (!t) { t = document.createElement('div'); t.id = 'editor-toast'; t.className = 'editor-toast'; document.body.appendChild(t); }
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.classList.remove('show'), 2400);
-}
-
-/* ═══════════════════════════════════════════
-   BUTTON WIRING & KEYS
-   ═══════════════════════════════════════════ */
-
-document.getElementById('editBtn').addEventListener('click', enterEdit);
-document.getElementById('saveBtn').addEventListener('click', () => exitEdit(true));
-document.getElementById('cancelBtn').addEventListener('click', () => {
-  if (confirm('Discard unsaved changes?')) exitEdit(false);
-});
-document.addEventListener('keydown', e => {
-  if (!editMode) return;
-  if (e.key === 'Escape') exitEdit(false);
-  if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); exitEdit(true); }
-});
-
-/* ═══════════════════════════════════════════
-   INIT — run A/B colors on every page load
-   ═══════════════════════════════════════════ */
-
-document.addEventListener('DOMContentLoaded', updateSectionColors);
+  window.PCCEditor = { showToast, isEditing: () => editMode };
+})();

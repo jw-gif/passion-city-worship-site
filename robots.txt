@@ -1,0 +1,5 @@
+# Internal worship team handbook. Shared by link with team members; it
+# contains staff contact details and compensation information, so it is kept
+# out of search indexes.
+User-agent: *
+Disallow: /
