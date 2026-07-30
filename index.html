@@ -37,7 +37,6 @@
 
     <div class="sidebar-footer">
       <a href="mailto:worship@passioncitychurch.com">worship@<br>passioncitychurch.com</a>
-      <button type="button" class="sidebar-admin" id="adminToggle">Staff login</button>
     </div>
   </nav>
 
@@ -81,6 +80,14 @@
     <div class="toolbar-sep"></div>
     <button type="button" data-cmd="removeFormat" title="Clear formatting" aria-label="Clear formatting">T&#x0336;</button>
   </div>
+
+  <!-- Staff sign-in. The only route in; the edit controls below stay hidden
+       until a signed-in editor is looking at live content. Kept outside the
+       sidebar so it is still reachable once the sidebar goes off-canvas. -->
+  <button type="button" class="staff-gear" id="adminToggle"
+          aria-label="Staff sign-in" title="Staff sign-in">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
 
   <!-- Floating edit / save / cancel button — revealed only for signed-in staff -->
   <div class="edit-fab" id="editFab" hidden>
