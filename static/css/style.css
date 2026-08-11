@@ -16,6 +16,10 @@
   --font:         'Helvetica Neue', Helvetica, Arial, sans-serif;
   --sidebar-w:    232px;
   --gutter:       clamp(28px, 5vw, 64px);
+  /* How wide a section's contents may run. One knob for the whole page. */
+  --content-w:    1040px;
+  /* Comfortable measure for a column of body text. */
+  --measure:      88ch;
 }
 
 /* =============================================
@@ -119,6 +123,37 @@ ul { list-style: none; }
   background: rgba(255,255,255,0.05);
 }
 
+/* ── Staging badge + environment link ──
+   Hidden outright unless js/env.js decides this is the preview build. */
+.env-badge { display: none; }
+.is-staging .env-badge {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: #f0b429;
+  color: var(--black);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.mobile-bar .env-badge { margin-top: 0; margin-left: 10px; }
+
+.env-link {
+  display: block;
+  margin-top: 12px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  transition: color 0.15s;
+}
+.env-link[hidden] { display: none; }
+.env-link:hover { color: var(--white); }
+
 /* Footer email */
 .sidebar-footer {
   /* Bottom padding clears the fixed sign-in gear, since .sidebar-nav's flex:1
@@ -202,7 +237,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   align-items: flex-end;
   padding: clamp(48px, 10vw, 120px) var(--gutter) clamp(40px, 5vw, 72px);
 }
-.section-hero__inner { max-width: 860px; width: 100%; }
+.section-hero__inner { max-width: var(--content-w); width: 100%; }
 
 /* Hero H1 */
 .section-hero h1 {
@@ -260,7 +295,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   padding: clamp(48px, 6vw, 80px) var(--gutter) clamp(24px, 3vw, 40px);
   background: inherit;
 }
-.section-header__inner { max-width: 860px; }
+.section-header__inner { max-width: var(--content-w); }
 
 .section-header h2 {
   font-size: clamp(2rem, 5vw, 3.6rem);
@@ -283,7 +318,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 /* Section body — inherits section background */
 .section-body { background: inherit; }
 .section-body__inner {
-  max-width: 860px;
+  max-width: var(--content-w);
   padding: 0 var(--gutter) clamp(56px, 7vw, 96px);
 }
 
@@ -317,7 +352,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   line-height: 1.75;
   color: var(--gray-600);
   margin-bottom: 16px;
-  max-width: 68ch;
+  max-width: var(--measure);
   letter-spacing: 0.01em;
 }
 
@@ -334,7 +369,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   line-height: 1.7;
   color: var(--gray-600);
   margin-bottom: 6px;
-  max-width: 68ch;
+  max-width: var(--measure);
   letter-spacing: 0.01em;
 }
 
@@ -345,7 +380,19 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 /* =============================================
    Welcome letter
    ============================================= */
-.welcome-letter { max-width: 640px; }
+.welcome-letter { max-width: var(--measure); }
+
+/* The letter sits on the dark welcome section, where the body grey used
+   everywhere else reads at about 2.5:1. Light text at 80% instead. */
+#welcome .content-body p,
+#welcome .content-body li {
+  color: rgba(255,255,255,0.8);
+}
+#welcome .content-body h2,
+#welcome .content-body h3,
+#welcome .content-body strong {
+  color: var(--white);
+}
 
 /* =============================================
    Staff grid
@@ -354,39 +401,44 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   display: grid;
   /* Cards claim a column when there is room for one and reflow when there
      isn't, so the grid suits any width without a breakpoint per size. */
-  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  /* Wide enough that a full address fits on one line in most cards. */
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
   gap: 20px;
 }
+
+/* The directory gets an off-white backdrop of its own, whichever way the
+   alternating pattern falls, so the cards read as white and lifted. */
+.section[data-kind="staff"]:not(#welcome) { background: var(--off-white); }
 
 .staff-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   background: var(--white);
-  border: 1px solid var(--gray-200);
-  border-radius: 14px;
-  padding: clamp(18px, 2vw, 24px);
+  border-radius: 16px;
+  padding: clamp(20px, 2vw, 26px);
+  /* Two shadows: a close one to seat the card, a wide soft one to lift it. */
+  box-shadow: 0 1px 2px rgba(13,13,13,0.05), 0 10px 28px -12px rgba(13,13,13,0.16);
   /* Long names and roles wrap instead of pushing the card wider. */
   min-width: 0;
   overflow-wrap: break-word;
 }
 
 .staff-card__photo {
-  width: 80px;
-  height: 80px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   object-fit: cover;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   background: var(--gray-100);
 }
 
 .staff-card__photo-placeholder {
-  width: 80px;
-  height: 80px;
+  width: 84px;
+  height: 84px;
   border-radius: 50%;
   background: var(--off-white);
-  border: 1px solid var(--gray-200);
-  margin-bottom: 16px;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -399,12 +451,12 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 /* pre-line on the editable fields: a line break typed in the editor is stored
    as a plain "\n", and this is what turns it back into a break on the page. */
 .staff-card__name {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: var(--black);
-  letter-spacing: -0.01em;
-  margin-bottom: 3px;
-  line-height: 1.2;
+  letter-spacing: -0.015em;
+  margin-bottom: 4px;
+  line-height: 1.25;
   white-space: pre-line;
 }
 
@@ -421,6 +473,10 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   font-size: 0.7rem;
   color: var(--accent);
   max-width: 100%;
+  /* Sits at the foot of the card, so addresses line up across a row however
+     long the roles above them run. */
+  margin-top: auto;
+  padding-top: 4px;
   /* An address has no spaces to break at, so let it break anywhere rather
      than run past the edge of its card. */
   overflow-wrap: anywhere;
@@ -435,7 +491,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 .section-block {
   padding: 44px 0;
   border-top: 1px solid rgba(0,0,0,0.08);
-  max-width: 720px;
+  max-width: var(--measure);
 }
 .section-block:last-child { border-bottom: 1px solid rgba(0,0,0,0.08); }
 
@@ -891,8 +947,7 @@ footer a:hover { color: var(--accent); }
   will-change: transform;
 }
 .staff-card.is-dragging {
-  border-color: transparent;
-  box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+  box-shadow: 0 18px 38px -10px rgba(13,13,13,0.28);
 }
 /* A block has no background of its own; the white spread gives it one so it
    covers what it passes over, without changing the layout box. */
@@ -925,7 +980,7 @@ body.is-reordering { cursor: grabbing; user-select: none; }
   gap: 8px;
   padding: 16px;
   border: 1.5px dashed var(--gray-200);
-  border-radius: 10px;
+  border-radius: 16px;
   cursor: pointer;
   color: var(--gray-400);
   font-size: 0.78rem;
