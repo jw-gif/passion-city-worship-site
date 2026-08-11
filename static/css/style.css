@@ -327,15 +327,11 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   margin-inline: auto;
 }
 
-/* A section's column is as wide as that section's content actually needs, and
-   centred either way. A directory of cards fills the full width; a section of
-   text is never wider than its measure, so its column is the measure — which
-   puts the text in the middle of the page instead of off to one side, with the
-   heading above it on the same axis. */
-.section[data-kind="grid"] .section-header__inner,
-.section[data-kind="grid"] .section-body__inner {
-  max-width: var(--measure);
-}
+/* Every section shares one column, so the widest content on the page — the
+   staff grid, which fills it — is what gets centred. Narrower content (a
+   column of text at its measure, a heading, an eyebrow) starts at that same
+   left edge rather than centring on its own, which would leave every section
+   sitting on a slightly different axis. */
 
 /* =============================================
    Content body (markdown)
