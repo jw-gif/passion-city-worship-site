@@ -220,10 +220,46 @@
      SERIALIZING (read the DOM back out for saving)
      ═══════════════════════════════════════════ */
 
-  const textOf = (root, selector) => {
-    const node = root.querySelector(selector);
-    return node ? node.textContent.trim() : '';
-  };
+  /* Tags a contenteditable can leave behind that end a line. */
+  const LINE_ENDERS = new Set(['DIV', 'P', 'LI', 'H1', 'H2', 'H3']);
+
+  /** Text of a field, keeping the line breaks typed into it — stored as plain
+      "\n", which the CSS renders back as breaks. Read from the nodes rather
+      than from innerText: innerText reflects styling, so a field set in
+      uppercase would be *stored* uppercase, permanently. */
+  function fieldText(node) {
+    if (!node) return '';
+    let text = '';
+    (function walk(parent) {
+      for (const child of parent.childNodes) {
+        if (child.nodeType === Node.TEXT_NODE) {
+          text += child.nodeValue;
+        } else if (child.nodeType === Node.ELEMENT_NODE) {
+          if (child.tagName === 'BR') {
+            text += '\n';
+          } else if (LINE_ENDERS.has(child.tagName)) {
+            if (text && !text.endsWith('\n')) text += '\n';
+            walk(child);
+            text += '\n';
+          } else {
+            walk(child);
+          }
+        }
+      }
+    })(node);
+    return text
+      .replace(/\u00a0/g, ' ')
+      .replace(/\r\n?/g, '\n')
+      .replace(/[ \t]+/g, ' ') // runs of spaces collapse, exactly as they render
+      .replace(/ *\n */g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  /** Same, for fields that only ever hold one line (emails, labels). */
+  const oneLine = node => fieldText(node).replace(/\s+/g, ' ');
+
+  const textOf = (root, selector) => fieldText(root.querySelector(selector));
 
   function serializeSection(node) {
     const kind = node.dataset.kind || 'grid';
@@ -235,7 +271,7 @@
       id: node.id,
       kind,
       is_builtin: node.dataset.builtin === 'true',
-      nav_label: navLink ? navLink.textContent.trim() : '',
+      nav_label: oneLine(navLink),
       blocks: [],
     };
 
@@ -254,7 +290,7 @@
     if (kind === 'staff') return section;
 
     section.blocks = [...(content ? content.querySelectorAll('.section-block') : [])].map(block => ({
-      label: block.querySelector('.section-label')?.textContent.trim() || '',
+      label: oneLine(block.querySelector('.section-label')),
       body_html: cleanHtml(block.querySelector('.content-body')?.innerHTML || ''),
     }));
     return section;
@@ -264,9 +300,9 @@
     const grid = document.querySelector('.staff-grid');
     if (!grid) return null;
     return [...grid.querySelectorAll('.staff-card')].map(card => ({
-      name: card.querySelector('.staff-card__name')?.textContent.trim() || '',
-      role: card.querySelector('.staff-card__role')?.textContent.trim() || '',
-      email: card.querySelector('.staff-card__email')?.textContent.trim() || '',
+      name: fieldText(card.querySelector('.staff-card__name')),
+      role: fieldText(card.querySelector('.staff-card__role')),
+      email: oneLine(card.querySelector('.staff-card__email')),
       photo_url: card.dataset.photoUrl || '',
     }));
   }
@@ -415,6 +451,7 @@
     updateSectionColors,
     initScrollSpy,
     serializeSite,
+    fieldText,
     photoSrc,
     initials,
     isLive: false,
