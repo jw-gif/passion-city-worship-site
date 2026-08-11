@@ -43,7 +43,13 @@ ul { list-style: none; }
    ============================================= */
 .page-wrap {
   margin-left: var(--sidebar-w);
+  /* Sections take the slack, so the dark footer always ends up against the
+     bottom of the page — even on a short one. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
+#sections { flex: 1; }
 
 /* =============================================
    Sidebar
@@ -154,22 +160,13 @@ ul { list-style: none; }
 .env-link[hidden] { display: none; }
 .env-link:hover { color: var(--white); }
 
-/* Footer email */
+/* Sidebar foot — empty unless there is an environment link to show. No rule
+   and no top padding, so nothing is drawn when it is empty; the bottom padding
+   still reserves room for the fixed sign-in gear below it. */
 .sidebar-footer {
-  /* Bottom padding clears the fixed sign-in gear, since .sidebar-nav's flex:1
-     pins this footer to the bottom of the viewport. */
-  padding: 20px 28px 74px;
-  border-top: 1px solid rgba(255,255,255,0.07);
+  padding: 0 28px 74px;
   flex-shrink: 0;
 }
-.sidebar-footer a {
-  font-size: 0.62rem;
-  letter-spacing: 0.06em;
-  color: rgba(255,255,255,0.22);
-  line-height: 1.6;
-  transition: color 0.15s;
-}
-.sidebar-footer a:hover { color: var(--accent); }
 
 /* =============================================
    Mobile top bar (hidden on desktop)
@@ -638,6 +635,11 @@ footer a:hover { color: var(--accent); }
 /* ── Format toolbar ── */
 .format-toolbar {
   position: absolute;
+  /* Parked at the origin until a selection moves it. Without this it sits at
+     its static position — the very end of the page — and its box stretches
+     the document past the footer. */
+  top: 0;
+  left: 0;
   z-index: 500;
   display: flex;
   align-items: center;
