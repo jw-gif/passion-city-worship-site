@@ -59,6 +59,50 @@ git commit -am "Refresh content snapshot" && git push
 
 ---
 
+## Staging
+
+There are two copies of the site. **Production** is whatever is on `main`.
+**Staging** is whatever is on the `staging` branch — same code, same content,
+its own URL — so a change can be looked at in a real browser before it goes
+live.
+
+### Previewing a change
+
+```bash
+git switch staging
+git merge <your-branch>          # or commit directly on staging
+git push origin staging
+```
+
+Vercel rebuilds the staging URL within a minute or so. When it looks right,
+merge the same work into `main` (a pull request is the easy way) and
+production follows.
+
+The staging site labels itself: a yellow **Staging** badge in the sidebar and
+`[Staging]` in front of the browser tab title, so the two are never confused.
+
+### Linking the two
+
+Once Vercel has built the branch, copy both URLs into `js/config.js`:
+
+```js
+PRODUCTION_URL: 'https://…',   // the live site
+STAGING_URL:    'https://…',   // Vercel's URL for the staging branch
+```
+
+Then each site offers a link to the other at the bottom of the sidebar — the
+link out to staging only appears for signed-in staff, and the way back to the
+live site is there for anyone. Leave either blank and that link stays hidden;
+the staging badge works regardless.
+
+> **Staging shares the live database.** It previews *code*, not content: both
+> sites read and write the same Supabase project, so saving an edit on staging
+> changes the real handbook. Editing there asks you to confirm first. If you
+> ever want content staged too, that needs a second Supabase project — ask and
+> it can be set up.
+
+---
+
 ## First-time setup
 
 ### 1. Change the shared password
@@ -122,6 +166,7 @@ index.html          Page shell only — the sidebar and sections are built by JS
 js/config.js        Supabase project URL + publishable key (both are public)
 js/sanitize.js      Strict HTML allowlist, applied on save and on render
 js/supabase.js      Small REST/Auth/Storage client (no supabase-js dependency)
+js/env.js           Tells the live site apart from the staging preview
 js/site.js          Loads content, renders the page, serializes it back for saving
 js/editor.js        Edit mode, and the single save call
 js/auth-ui.js       Staff sign-in dialog

@@ -685,6 +685,20 @@
 
   async function saveChanges() {
     if (saving) return;
+
+    // Staging previews code, not content: it reads and writes the same
+    // database as the live site, so a save here is a real edit.
+    if (
+      window.PCCEnv &&
+      window.PCCEnv.isStaging() &&
+      !confirm(
+        'This is the staging preview, but content is shared with the live site — ' +
+          'saving changes the real handbook. Save anyway?'
+      )
+    ) {
+      return;
+    }
+
     const payload = site.serializeSite();
 
     if (!payload.sections.length) {

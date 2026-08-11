@@ -29,6 +29,8 @@
       <div class="sidebar-logo">
         <span class="sidebar-logo__org">Passion City Church</span>
         <span class="sidebar-logo__team">Worship Team</span>
+        <!-- Only ever visible on the staging build (see js/env.js). -->
+        <span class="env-badge" title="Preview build — content is shared with the live site">Staging</span>
       </div>
     </div>
 
@@ -37,12 +39,15 @@
 
     <div class="sidebar-footer">
       <a href="mailto:worship@passioncitychurch.com">worship@<br>passioncitychurch.com</a>
+      <!-- Link to the other environment; js/env.js fills it in, or hides it. -->
+      <a class="env-link" id="envLink" hidden></a>
     </div>
   </nav>
 
   <!-- Mobile top bar -->
   <div class="mobile-bar">
     <span class="mobile-bar__logo">Passion City Worship</span>
+    <span class="env-badge">Staging</span>
     <button class="mobile-bar__toggle" id="menuToggle" aria-label="Open menu"
             aria-controls="sidebar" aria-expanded="false">
       <span></span><span></span><span></span>
@@ -106,6 +111,7 @@
   <script src="js/config.js"></script>
   <script src="js/sanitize.js"></script>
   <script src="js/supabase.js"></script>
+  <script src="js/env.js"></script>
   <script src="js/site.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/auth-ui.js"></script>
