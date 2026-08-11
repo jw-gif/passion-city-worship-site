@@ -232,12 +232,14 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 .section-hero {
   background: var(--black);
   color: var(--white);
-  min-height: 54vh;
+  /* Tall enough to read as a band, short enough that the page does not open
+     on a screenful of empty black. The content still sits at its foot. */
+  min-height: 34vh;
   display: flex;
   align-items: flex-end;
-  padding: clamp(48px, 10vw, 120px) var(--gutter) clamp(40px, 5vw, 72px);
+  padding: clamp(28px, 5vw, 64px) var(--gutter) clamp(40px, 5vw, 72px);
 }
-.section-hero__inner { max-width: var(--content-w); width: 100%; }
+.section-hero__inner { max-width: var(--content-w); width: 100%; margin-inline: auto; }
 
 /* Hero H1 */
 .section-hero h1 {
@@ -295,7 +297,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   padding: clamp(48px, 6vw, 80px) var(--gutter) clamp(24px, 3vw, 40px);
   background: inherit;
 }
-.section-header__inner { max-width: var(--content-w); }
+.section-header__inner { max-width: var(--content-w); margin-inline: auto; }
 
 .section-header h2 {
   font-size: clamp(2rem, 5vw, 3.6rem);
@@ -316,11 +318,20 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 }
 
 /* Section body — inherits section background */
-.section-body { background: inherit; }
-.section-body__inner {
-  max-width: var(--content-w);
+.section-body {
+  background: inherit;
   padding: 0 var(--gutter) clamp(56px, 7vw, 96px);
 }
+.section-body__inner {
+  max-width: var(--content-w);
+  margin-inline: auto;
+}
+
+/* Every section shares one column, so the widest content on the page — the
+   staff grid, which fills it — is what gets centred. Narrower content (a
+   column of text at its measure, a heading, an eyebrow) starts at that same
+   left edge rather than centring on its own, which would leave every section
+   sitting on a slightly different axis. */
 
 /* =============================================
    Content body (markdown)
@@ -567,7 +578,7 @@ footer a:hover { color: var(--accent); }
     padding-top: 52px; /* height of mobile bar */
   }
 
-  .section-hero { min-height: 44vh; }
+  .section-hero { min-height: 26vh; }
   .section-hero h1 { letter-spacing: -0.05em; }
 
   /* One card per row: a phone-width column of full-width cards reads better
