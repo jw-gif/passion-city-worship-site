@@ -254,6 +254,173 @@
     input.click();
   }
 
+  /* ── Reordering ──
+     Cards are dragged by a small grip rather than by the card itself: the name,
+     role, and email are contenteditable while editing, and a draggable card
+     would fight with selecting text inside them. Pointer events cover mouse,
+     touch, and pen in one code path. Nothing is written here — the new order is
+     simply the DOM order, which serializeStaff() already reads on save. */
+
+  const SCROLL_EDGE = 64; // distance from the viewport edge that auto-scrolls
+  const SCROLL_MAX = 16; // px per frame, at the very edge
+  let drag = null;
+
+  function staffCards(grid) {
+    return [...grid.querySelectorAll('.staff-card')];
+  }
+
+  function addDragHandle(card) {
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'ec staff-drag-handle';
+    handle.title = 'Drag to reorder — or use the arrow keys';
+    handle.setAttribute('aria-label', 'Reorder this person');
+    handle.innerHTML =
+      '<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">' +
+      '<circle cx="3.5" cy="2" r="1"/><circle cx="6.5" cy="2" r="1"/>' +
+      '<circle cx="3.5" cy="5" r="1"/><circle cx="6.5" cy="5" r="1"/>' +
+      '<circle cx="3.5" cy="8" r="1"/><circle cx="6.5" cy="8" r="1"/></svg>';
+    handle.addEventListener('pointerdown', startDrag);
+    handle.addEventListener('keydown', nudgeCard);
+    card.appendChild(handle);
+  }
+
+  /** Keep the dragged card under the pointer. Measured fresh each time so it
+      stays correct after the card is moved in the DOM or the page scrolls. */
+  function placeCard() {
+    const card = drag.card;
+    card.style.transform = '';
+    const rect = card.getBoundingClientRect();
+    card.style.transform =
+      `translate(${drag.x - drag.grabX - rect.left}px, ${drag.y - drag.grabY - rect.top}px)`;
+  }
+
+  /** The topmost other card beneath the pointer, if any. */
+  function cardUnder(x, y) {
+    for (const node of document.elementsFromPoint(x, y)) {
+      const card = node.closest && node.closest('.staff-card');
+      if (card && card !== drag.card && card.parentElement === drag.grid) return card;
+    }
+    return null;
+  }
+
+  function updateDrag() {
+    const target = cardUnder(drag.x, drag.y);
+    if (target) {
+      // Moving forwards drops in after the target, backwards drops in before it.
+      const cardIsLater =
+        target.compareDocumentPosition(drag.card) & Node.DOCUMENT_POSITION_FOLLOWING;
+      drag.grid.insertBefore(drag.card, cardIsLater ? target : target.nextSibling);
+    }
+    placeCard();
+  }
+
+  /** Scroll the page when the pointer is dragged near the top or bottom edge. */
+  function autoScroll() {
+    if (!drag) return;
+    const above = drag.y - SCROLL_EDGE;
+    const below = window.innerHeight - SCROLL_EDGE - drag.y;
+    let dy = 0;
+    if (above < 0) dy = Math.max(above / SCROLL_EDGE, -1) * SCROLL_MAX;
+    else if (below < 0) dy = Math.min(-below / SCROLL_EDGE, 1) * SCROLL_MAX;
+    if (dy) {
+      // Instant, not the page's smooth default — each frame is its own step.
+      window.scrollBy({ top: dy, behavior: 'instant' });
+      updateDrag();
+    }
+    drag.frame = requestAnimationFrame(autoScroll);
+  }
+
+  function startDrag(e) {
+    if (!editMode || drag || (e.button != null && e.button > 0)) return;
+    const handle = e.currentTarget;
+    const card = handle.closest('.staff-card');
+    const grid = card && card.parentElement;
+    if (!grid) return;
+
+    e.preventDefault();
+    const rect = card.getBoundingClientRect();
+    drag = {
+      card,
+      grid,
+      handle,
+      pointerId: e.pointerId,
+      grabX: e.clientX - rect.left,
+      grabY: e.clientY - rect.top,
+      x: e.clientX,
+      y: e.clientY,
+      // Where the card sat when the drag began, so Escape can put it back.
+      origin: card.nextElementSibling,
+      frame: 0,
+    };
+    try {
+      handle.setPointerCapture(e.pointerId);
+    } catch {
+      /* Capture is a nicety; document-level listeners carry the drag anyway. */
+    }
+    card.classList.add('is-dragging');
+    document.body.classList.add('is-reordering');
+    placeCard();
+    drag.frame = requestAnimationFrame(autoScroll);
+  }
+
+  function moveDrag(e) {
+    if (!drag || e.pointerId !== drag.pointerId) return;
+    e.preventDefault();
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+    updateDrag();
+  }
+
+  function endDrag(e) {
+    if (!drag || (e && e.pointerId !== drag.pointerId)) return;
+    cancelAnimationFrame(drag.frame);
+    drag.card.style.transform = '';
+    drag.card.classList.remove('is-dragging');
+    document.body.classList.remove('is-reordering');
+    try {
+      drag.handle.releasePointerCapture(drag.pointerId);
+    } catch {
+      /* Already released — the pointer went away. */
+    }
+    drag = null;
+  }
+
+  /** Escape mid-drag: put the card back where it started. */
+  function cancelDrag() {
+    if (!drag) return;
+    drag.grid.insertBefore(drag.card, drag.origin);
+    endDrag();
+  }
+
+  document.addEventListener('pointermove', moveDrag);
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+
+  /** Keyboard equivalent of the drag, for anyone not using a pointer. */
+  function nudgeCard(e) {
+    const card = e.currentTarget.closest('.staff-card');
+    const grid = card && card.parentElement;
+    if (!grid) return;
+
+    const cards = staffCards(grid);
+    const from = cards.indexOf(card);
+    let to = from;
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = from - 1;
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = from + 1;
+    else if (e.key === 'Home') to = 0;
+    else if (e.key === 'End') to = cards.length - 1;
+    else return;
+
+    e.preventDefault();
+    e.stopPropagation();
+    if (from < 0 || to === from || to < 0 || to >= cards.length) return;
+
+    grid.insertBefore(card, to > from ? cards[to].nextSibling : cards[to]);
+    e.currentTarget.focus();
+    showToast(`Moved to ${to + 1} of ${cards.length}`);
+  }
+
   function enableStaffCard(card) {
     makeEditable(card.querySelector('.staff-card__name'), { plain: true, spellcheck: false });
     makeEditable(card.querySelector('.staff-card__role'), { plain: true, spellcheck: false });
@@ -272,6 +439,7 @@
     });
 
     wirePhoto(card);
+    addDragHandle(card);
 
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -406,6 +574,7 @@
   }
 
   function teardownEditUi() {
+    endDrag(); // in case edit mode ends while a card is being dragged
     document.body.classList.remove('edit-mode');
     document.querySelectorAll('.ec').forEach(node => node.remove());
     document.querySelectorAll('[contenteditable]').forEach(node => {
@@ -557,7 +726,11 @@
 
   document.addEventListener('keydown', e => {
     if (!editMode) return;
-    if (e.key === 'Escape') cancelChanges();
+    if (e.key === 'Escape') {
+      // Mid-drag, Escape belongs to the drag — it shouldn't discard the edit.
+      if (drag) cancelDrag();
+      else cancelChanges();
+    }
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
       e.preventDefault();
       saveChanges();

@@ -27,6 +27,10 @@ markdown.
    - Sidebar link names are editable directly in the sidebar.
    - On the staff directory: click a photo to replace it, edit names, roles and
      emails in place, use **Add staff member**, or the **×** to remove someone.
+   - To change the order people are listed in, drag a card by the grip that
+     appears at its top-left corner and drop it where you want it. (Keyboard:
+     tab to the grip and use the arrow keys, or `Home` / `End`. `Esc` mid-drag
+     puts the card back.)
 5. Click **Save changes**. Everyone sees the update immediately — there is no
    deploy step.
 

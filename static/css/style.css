@@ -795,6 +795,57 @@ footer a:hover { color: var(--accent); }
 .staff-card:hover .staff-delete-btn { opacity: 1; }
 .staff-delete-btn:hover { background: #fee; border-color: #fcc; color: #c00; }
 
+/* ── Staff card drag handle ── */
+.staff-drag-handle {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid var(--gray-200);
+  color: var(--gray-400);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, border-color 0.15s;
+  touch-action: none; /* the drag owns the gesture, not the page scroll */
+  z-index: 10;
+}
+.staff-card:hover .staff-drag-handle,
+.staff-drag-handle:focus-visible { opacity: 1; }
+.staff-drag-handle:hover { color: var(--accent); border-color: var(--accent); }
+
+/* No hover to reveal it on a touch screen — and a hidden control is not a
+   reliable touch target — so show a larger grip permanently there. */
+@media (hover: none) {
+  .staff-drag-handle {
+    opacity: 1;
+    width: 30px;
+    height: 30px;
+    top: -8px;
+    left: -8px;
+  }
+}
+
+/* The card being dragged rides above the grid, following the pointer. The
+   white spread reads as a lifted card, and keeps whatever it passes over from
+   showing through, without changing the layout box. */
+.staff-card.is-dragging {
+  z-index: 20;
+  will-change: transform;
+  background: var(--white);
+  border-radius: 10px;
+  box-shadow: 0 0 0 10px var(--white), 0 12px 26px rgba(0,0,0,0.16);
+}
+.staff-card.is-dragging .staff-drag-handle { opacity: 1; cursor: grabbing; }
+.staff-card.is-dragging .staff-delete-btn { opacity: 0; }
+
+body.is-reordering { cursor: grabbing; user-select: none; }
+
 /* Staff fields editable in edit mode */
 .edit-mode .staff-card__name[contenteditable],
 .edit-mode .staff-card__role[contenteditable],
