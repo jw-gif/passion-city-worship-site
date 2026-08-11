@@ -53,16 +53,55 @@
     if (opts.plain) node.dataset.plainText = '1';
   }
 
+  /* A handful of fields are meaningless split across lines — an address, a
+     sidebar label, a category eyebrow. Every other plain-text field takes a
+     line break on Enter. */
+  const SINGLE_LINE = '.staff-card__email, .sidebar-link, .eyebrow, .section-label';
+
+  const plainField = target => {
+    const field = target.closest?.('[contenteditable="true"]');
+    return field && field.dataset.plainText ? field : null;
+  };
+
   /* Pasting into a plain-text field (labels, headings, roles) should not drag
      along the source document's markup. */
   document.addEventListener('paste', e => {
     if (!editMode) return;
-    const field = e.target.closest?.('[contenteditable="true"]');
+    const field = plainField(e.target);
     if (!field) return;
-    if (!field.dataset.plainText) return;
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, text.replace(/\s*\n\s*/g, ' '));
+    document.execCommand(
+      'insertText',
+      false,
+      field.matches(SINGLE_LINE) ? text.replace(/\s*\n\s*/g, ' ') : text.trim()
+    );
+  });
+
+  /** Enter in a plain-text field: a line break, never a new paragraph. */
+  function insertLineBreak() {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    const br = document.createElement('br');
+    range.insertNode(br);
+    // A <br> at the very end of a field renders nothing on its own, so the
+    // caret would have nowhere to land; the second one is the usual fix, and
+    // it serializes away with the trailing whitespace.
+    if (!br.nextSibling) br.after(document.createElement('br'));
+    range.setStartAfter(br);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!editMode || e.key !== 'Enter') return;
+    const field = plainField(e.target);
+    if (!field) return; // rich bodies keep their paragraphs
+    e.preventDefault();
+    if (!field.matches(SINGLE_LINE)) insertLineBreak();
   });
 
   function selectAll(node) {
@@ -92,20 +131,33 @@
 
     // Keep the sidebar label in step with the heading, but only while the two
     // still agree — once someone edits the label directly, leave it alone.
+    // A heading may be broken over lines; the sidebar label stays on one.
+    const label = node => site.fieldText(node).replace(/\s+/g, ' ');
     const link = navLinkFor(section.id);
-    if (heading && link && link.textContent.trim() === heading.textContent.trim()) {
+    if (heading && link && label(link) === label(heading)) {
       heading.addEventListener('input', () => {
-        link.textContent = heading.textContent.trim();
+        link.textContent = label(heading);
       });
     }
   }
 
   function enableNavEditing() {
-    document.querySelectorAll('#sidebarNav .sidebar-link').forEach(link => {
-      makeEditable(link, { plain: true, spellcheck: false });
-      // Don't navigate away mid-edit.
-      link.addEventListener('click', e => {
-        if (editMode) e.preventDefault();
+    document.querySelectorAll('#sidebarNav li').forEach(item => {
+      const link = item.querySelector('.sidebar-link');
+      if (link && !link.isContentEditable) {
+        makeEditable(link, { plain: true, spellcheck: false });
+        // Don't navigate away mid-edit.
+        link.addEventListener('click', e => {
+          if (editMode) e.preventDefault();
+        });
+      }
+      // Sorting the sidebar sorts the page: a link and its section move together.
+      addGrip(item, {
+        kind: 'nav',
+        selector: 'li',
+        label: 'Reorder this section',
+        scroll: false,
+        onDrop: applyNavOrder,
       });
     });
   }
@@ -144,6 +196,12 @@
   function enableBlock(block) {
     makeEditable(block.querySelector('.section-label'), { plain: true, spellcheck: false });
     makeEditable(block.querySelector('.content-body'));
+
+    addGrip(block, {
+      kind: 'block',
+      selector: '.section-block',
+      label: 'Reorder this block',
+    });
 
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -255,64 +313,76 @@
   }
 
   /* ── Reordering ──
-     Cards are dragged by a small grip rather than by the card itself: the name,
-     role, and email are contenteditable while editing, and a draggable card
-     would fight with selecting text inside them. Pointer events cover mouse,
-     touch, and pen in one code path. Nothing is written here — the new order is
-     simply the DOM order, which serializeStaff() already reads on save. */
+     One engine for everything that can be sorted: staff cards, content blocks,
+     and sidebar links (which carry their whole section with them). Items are
+     dragged by a small grip rather than by the item itself — names, roles, and
+     bodies are contenteditable while editing, and a draggable item would fight
+     with selecting text inside them. Pointer events cover mouse, touch, and pen
+     in one code path. Nothing is written here: the new order is simply the DOM
+     order, which serializeSite() already reads on save. */
 
   const SCROLL_EDGE = 64; // distance from the viewport edge that auto-scrolls
   const SCROLL_MAX = 16; // px per frame, at the very edge
+  const GRIP_SVG =
+    '<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">' +
+    '<circle cx="3.5" cy="2" r="1"/><circle cx="6.5" cy="2" r="1"/>' +
+    '<circle cx="3.5" cy="5" r="1"/><circle cx="6.5" cy="5" r="1"/>' +
+    '<circle cx="3.5" cy="8" r="1"/><circle cx="6.5" cy="8" r="1"/></svg>';
+
+  const gripOptions = new WeakMap();
   let drag = null;
 
-  function staffCards(grid) {
-    return [...grid.querySelectorAll('.staff-card')];
+  /**
+   * Give an item a grip that reorders it among its siblings.
+   * @param item     the element that moves
+   * @param options  kind: style variant; selector: what its siblings look like;
+   *                 label: for screen readers; onDrop: run after a reorder;
+   *                 scroll: false to skip edge auto-scrolling
+   */
+  function addGrip(item, options) {
+    if (item.querySelector(':scope > .drag-grip')) return;
+    const grip = document.createElement('button');
+    grip.type = 'button';
+    grip.className = `ec drag-grip drag-grip--${options.kind}`;
+    grip.title = 'Drag to reorder — or use the arrow keys';
+    grip.setAttribute('aria-label', options.label);
+    grip.innerHTML = GRIP_SVG;
+    gripOptions.set(grip, options);
+    grip.addEventListener('pointerdown', startDrag);
+    grip.addEventListener('keydown', nudgeItem);
+    item.appendChild(grip);
   }
 
-  function addDragHandle(card) {
-    const handle = document.createElement('button');
-    handle.type = 'button';
-    handle.className = 'ec staff-drag-handle';
-    handle.title = 'Drag to reorder — or use the arrow keys';
-    handle.setAttribute('aria-label', 'Reorder this person');
-    handle.innerHTML =
-      '<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">' +
-      '<circle cx="3.5" cy="2" r="1"/><circle cx="6.5" cy="2" r="1"/>' +
-      '<circle cx="3.5" cy="5" r="1"/><circle cx="6.5" cy="5" r="1"/>' +
-      '<circle cx="3.5" cy="8" r="1"/><circle cx="6.5" cy="8" r="1"/></svg>';
-    handle.addEventListener('pointerdown', startDrag);
-    handle.addEventListener('keydown', nudgeCard);
-    card.appendChild(handle);
-  }
+  const siblingsOf = drag => [...drag.container.querySelectorAll(`:scope > ${drag.selector}`)];
 
-  /** Keep the dragged card under the pointer. Measured fresh each time so it
-      stays correct after the card is moved in the DOM or the page scrolls. */
-  function placeCard() {
-    const card = drag.card;
-    card.style.transform = '';
-    const rect = card.getBoundingClientRect();
-    card.style.transform =
+  /** Keep the dragged item under the pointer. Measured fresh each time so it
+      stays correct after the item is moved in the DOM or the page scrolls. */
+  function placeItem() {
+    const item = drag.item;
+    item.style.transform = '';
+    const rect = item.getBoundingClientRect();
+    item.style.transform =
       `translate(${drag.x - drag.grabX - rect.left}px, ${drag.y - drag.grabY - rect.top}px)`;
   }
 
-  /** The topmost other card beneath the pointer, if any. */
-  function cardUnder(x, y) {
+  /** The topmost other item beneath the pointer, if any. */
+  function itemUnder(x, y) {
     for (const node of document.elementsFromPoint(x, y)) {
-      const card = node.closest && node.closest('.staff-card');
-      if (card && card !== drag.card && card.parentElement === drag.grid) return card;
+      const item = node.closest && node.closest(drag.selector);
+      if (item && item !== drag.item && item.parentElement === drag.container) return item;
     }
     return null;
   }
 
   function updateDrag() {
-    const target = cardUnder(drag.x, drag.y);
+    const target = itemUnder(drag.x, drag.y);
     if (target) {
       // Moving forwards drops in after the target, backwards drops in before it.
-      const cardIsLater =
-        target.compareDocumentPosition(drag.card) & Node.DOCUMENT_POSITION_FOLLOWING;
-      drag.grid.insertBefore(drag.card, cardIsLater ? target : target.nextSibling);
+      const itemIsLater =
+        target.compareDocumentPosition(drag.item) & Node.DOCUMENT_POSITION_FOLLOWING;
+      drag.container.insertBefore(drag.item, itemIsLater ? target : target.nextSibling);
     }
-    placeCard();
+    placeItem();
   }
 
   /** Scroll the page when the pointer is dragged near the top or bottom edge. */
@@ -333,35 +403,39 @@
 
   function startDrag(e) {
     if (!editMode || drag || (e.button != null && e.button > 0)) return;
-    const handle = e.currentTarget;
-    const card = handle.closest('.staff-card');
-    const grid = card && card.parentElement;
-    if (!grid) return;
+    const grip = e.currentTarget;
+    const options = gripOptions.get(grip);
+    const item = options && grip.closest(options.selector);
+    const container = item && item.parentElement;
+    if (!container) return;
 
     e.preventDefault();
-    const rect = card.getBoundingClientRect();
+    const rect = item.getBoundingClientRect();
     drag = {
-      card,
-      grid,
-      handle,
+      item,
+      container,
+      grip,
+      selector: options.selector,
+      onDrop: options.onDrop,
       pointerId: e.pointerId,
       grabX: e.clientX - rect.left,
       grabY: e.clientY - rect.top,
       x: e.clientX,
       y: e.clientY,
-      // Where the card sat when the drag began, so Escape can put it back.
-      origin: card.nextElementSibling,
+      // Where the item sat when the drag began, so Escape can put it back.
+      origin: item.nextElementSibling,
       frame: 0,
     };
     try {
-      handle.setPointerCapture(e.pointerId);
+      grip.setPointerCapture(e.pointerId);
     } catch {
       /* Capture is a nicety; document-level listeners carry the drag anyway. */
     }
-    card.classList.add('is-dragging');
+    item.classList.add('is-dragging');
     document.body.classList.add('is-reordering');
-    placeCard();
-    drag.frame = requestAnimationFrame(autoScroll);
+    placeItem();
+    // The sidebar list is short and always on screen, so it needs no scrolling.
+    if (options.scroll !== false) drag.frame = requestAnimationFrame(autoScroll);
   }
 
   function moveDrag(e) {
@@ -375,21 +449,24 @@
   function endDrag(e) {
     if (!drag || (e && e.pointerId !== drag.pointerId)) return;
     cancelAnimationFrame(drag.frame);
-    drag.card.style.transform = '';
-    drag.card.classList.remove('is-dragging');
+    drag.item.style.transform = '';
+    drag.item.classList.remove('is-dragging');
     document.body.classList.remove('is-reordering');
     try {
-      drag.handle.releasePointerCapture(drag.pointerId);
+      drag.grip.releasePointerCapture(drag.pointerId);
     } catch {
       /* Already released — the pointer went away. */
     }
+    const moved = drag.item.nextElementSibling !== drag.origin;
+    const onDrop = drag.onDrop;
     drag = null;
+    if (moved && onDrop) onDrop();
   }
 
-  /** Escape mid-drag: put the card back where it started. */
+  /** Escape mid-drag: put the item back where it started. */
   function cancelDrag() {
     if (!drag) return;
-    drag.grid.insertBefore(drag.card, drag.origin);
+    drag.container.insertBefore(drag.item, drag.origin);
     endDrag();
   }
 
@@ -398,27 +475,42 @@
   document.addEventListener('pointercancel', endDrag);
 
   /** Keyboard equivalent of the drag, for anyone not using a pointer. */
-  function nudgeCard(e) {
-    const card = e.currentTarget.closest('.staff-card');
-    const grid = card && card.parentElement;
-    if (!grid) return;
+  function nudgeItem(e) {
+    const grip = e.currentTarget;
+    const options = gripOptions.get(grip);
+    const item = options && grip.closest(options.selector);
+    const container = item && item.parentElement;
+    if (!container) return;
 
-    const cards = staffCards(grid);
-    const from = cards.indexOf(card);
+    const items = siblingsOf({ container, selector: options.selector });
+    const from = items.indexOf(item);
     let to = from;
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') to = from - 1;
     else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') to = from + 1;
     else if (e.key === 'Home') to = 0;
-    else if (e.key === 'End') to = cards.length - 1;
+    else if (e.key === 'End') to = items.length - 1;
     else return;
 
     e.preventDefault();
     e.stopPropagation();
-    if (from < 0 || to === from || to < 0 || to >= cards.length) return;
+    if (from < 0 || to === from || to < 0 || to >= items.length) return;
 
-    grid.insertBefore(card, to > from ? cards[to].nextSibling : cards[to]);
-    e.currentTarget.focus();
-    showToast(`Moved to ${to + 1} of ${cards.length}`);
+    container.insertBefore(item, to > from ? items[to].nextSibling : items[to]);
+    grip.focus();
+    if (options.onDrop) options.onDrop();
+    showToast(`Moved to ${to + 1} of ${items.length}`);
+  }
+
+  /** Sections follow their sidebar links, so dropping a link moves its section. */
+  function applyNavOrder() {
+    const host = document.getElementById('sections');
+    const addButton = host.querySelector('.add-section-btn');
+    document.querySelectorAll('#sidebarNav li').forEach(li => {
+      const section = document.getElementById(li.dataset.for);
+      if (section) host.appendChild(section);
+    });
+    if (addButton) host.appendChild(addButton); // stays last
+    site.updateSectionColors();
   }
 
   function enableStaffCard(card) {
@@ -439,7 +531,11 @@
     });
 
     wirePhoto(card);
-    addDragHandle(card);
+    addGrip(card, {
+      kind: 'staff',
+      selector: '.staff-card',
+      label: 'Reorder this person',
+    });
 
     const remove = document.createElement('button');
     remove.type = 'button';

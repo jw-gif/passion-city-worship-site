@@ -21,16 +21,22 @@ markdown.
 4. Change anything on the page:
    - Click any text to type over it. Selecting text in a content block pops up
      a small toolbar for bold, italic, headings, and lists.
+   - `Enter` in a heading, name, role, or description breaks the line there.
+     (Addresses, sidebar labels, and block labels stay on one line.)
    - **Add block** / the small **×** on a block adds and removes content cards.
    - **Add new section** / **Remove section** adds and removes whole sections,
      including their sidebar links.
    - Sidebar link names are editable directly in the sidebar.
    - On the staff directory: click a photo to replace it, edit names, roles and
      emails in place, use **Add staff member**, or the **×** to remove someone.
-   - To change the order people are listed in, drag a card by the grip that
-     appears at its top-left corner and drop it where you want it. (Keyboard:
-     tab to the grip and use the arrow keys, or `Home` / `End`. `Esc` mid-drag
-     puts the card back.)
+   - **To reorder anything, drag it by its grip** (the ⠿ dots):
+     - *People* — the grip at the top of a staff card.
+     - *Blocks* — the grip above a block's label.
+     - *Sections* — the grip on a sidebar link. Sorting the sidebar sorts the
+       page; a link and its section always move together.
+
+     Keyboard: tab to a grip and use the arrow keys, or `Home` / `End`. `Esc`
+     mid-drag puts the item back.
 5. Click **Save changes**. Everyone sees the update immediately — there is no
    deploy step.
 

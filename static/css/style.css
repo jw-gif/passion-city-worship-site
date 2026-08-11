@@ -214,15 +214,17 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 .section-hero h1 em {
   display: block;
   font-style: normal;
-  color: rgba(255,255,255,0.28);
+  /* Both lines of the welcome heading read at full strength. */
+  color: var(--white);
 }
 .hero-sub {
   margin-top: 28px;
   font-size: 1rem;
-  color: rgba(255,255,255,0.42);
+  color: rgba(255,255,255,0.8);
   max-width: 52ch;
   line-height: 1.65;
   letter-spacing: 0.01em;
+  white-space: pre-line;
 }
 
 /* Eyebrow — blue rule + label */
@@ -275,6 +277,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   max-width: 56ch;
   line-height: 1.65;
   letter-spacing: 0.01em;
+  white-space: pre-line;
 }
 
 /* Section body — inherits section background */
@@ -349,11 +352,24 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
    ============================================= */
 .staff-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 52px 36px;
+  /* Cards claim a column when there is room for one and reflow when there
+     isn't, so the grid suits any width without a breakpoint per size. */
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 20px;
 }
 
-.staff-card { display: flex; flex-direction: column; align-items: flex-start; }
+.staff-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: 14px;
+  padding: clamp(18px, 2vw, 24px);
+  /* Long names and roles wrap instead of pushing the card wider. */
+  min-width: 0;
+  overflow-wrap: break-word;
+}
 
 .staff-card__photo {
   width: 80px;
@@ -380,6 +396,8 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   letter-spacing: -0.02em;
 }
 
+/* pre-line on the editable fields: a line break typed in the editor is stored
+   as a plain "\n", and this is what turns it back into a break on the page. */
 .staff-card__name {
   font-size: 0.88rem;
   font-weight: 700;
@@ -387,6 +405,7 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   letter-spacing: -0.01em;
   margin-bottom: 3px;
   line-height: 1.2;
+  white-space: pre-line;
 }
 
 .staff-card__role {
@@ -394,12 +413,17 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
   color: var(--gray-400);
   line-height: 1.45;
   margin-bottom: 8px;
-  max-width: 22ch;
+  max-width: 100%;
+  white-space: pre-line;
 }
 
 .staff-card__email {
   font-size: 0.7rem;
   color: var(--accent);
+  max-width: 100%;
+  /* An address has no spaces to break at, so let it break anywhere rather
+     than run past the edge of its card. */
+  overflow-wrap: anywhere;
 }
 .staff-card__email:hover { text-decoration: underline; }
 
@@ -490,14 +514,19 @@ footer a:hover { color: var(--accent); }
   .section-hero { min-height: 44vh; }
   .section-hero h1 { letter-spacing: -0.05em; }
 
+  /* One card per row: a phone-width column of full-width cards reads better
+     than two cramped ones. A smaller photo keeps that column from running on. */
   .staff-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 36px 20px;
+    grid-template-columns: 1fr;
+    gap: 14px;
   }
-}
-
-@media (max-width: 420px) {
-  .staff-grid { grid-template-columns: 1fr 1fr; }
+  .staff-card { padding: 16px 18px; }
+  .staff-card__photo,
+  .staff-card__photo-placeholder {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 12px;
+  }
 }
 
 /* =============================================
@@ -699,7 +728,7 @@ footer a:hover { color: var(--accent); }
 
 /* Edit banner */
 .edit-mode::before {
-  content: 'Edit mode — click any text to edit';
+  content: 'Edit mode — click any text to edit, drag a grip to reorder';
   position: fixed;
   top: 0; left: var(--sidebar-w); right: 0;
   z-index: 400;
@@ -776,8 +805,8 @@ footer a:hover { color: var(--accent); }
 
 .staff-delete-btn {
   position: absolute;
-  top: -6px;
-  right: -6px;
+  top: 10px;
+  right: 10px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -795,11 +824,10 @@ footer a:hover { color: var(--accent); }
 .staff-card:hover .staff-delete-btn { opacity: 1; }
 .staff-delete-btn:hover { background: #fee; border-color: #fcc; color: #c00; }
 
-/* ── Staff card drag handle ── */
-.staff-drag-handle {
+/* ── Drag grips ──
+   The same control on a staff card, a content block, and a sidebar link. */
+.drag-grip {
   position: absolute;
-  top: -6px;
-  left: -6px;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -815,34 +843,69 @@ footer a:hover { color: var(--accent); }
   touch-action: none; /* the drag owns the gesture, not the page scroll */
   z-index: 10;
 }
-.staff-card:hover .staff-drag-handle,
-.staff-drag-handle:focus-visible { opacity: 1; }
-.staff-drag-handle:hover { color: var(--accent); border-color: var(--accent); }
+.drag-grip:hover { color: var(--accent); border-color: var(--accent); }
+.drag-grip:focus-visible { opacity: 1; }
 
-/* No hover to reveal it on a touch screen — and a hidden control is not a
-   reliable touch target — so show a larger grip permanently there. */
+.drag-grip--staff { top: 10px; right: 38px; }
+.staff-card:hover .drag-grip--staff { opacity: 1; }
+
+/* Blocks have generous top padding, so the grip sits in it, clear of the text. */
+.drag-grip--block { top: 12px; left: 0; }
+.section-block:hover .drag-grip--block { opacity: 1; }
+
+/* Sorting the sidebar sorts the page itself, which is worth advertising, so
+   these stay visible for as long as edit mode is on. */
+.drag-grip--nav {
+  opacity: 1;
+  top: 50%;
+  right: 14px;
+  margin-top: -11px;
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.18);
+  color: rgba(255,255,255,0.5);
+}
+.drag-grip--nav:hover { color: var(--white); border-color: var(--accent); }
+.edit-mode .sidebar-nav li { position: relative; }
+
+/* No hover to reveal them on a touch screen — and a hidden control is not a
+   reliable touch target — so the editing controls stay out there. */
 @media (hover: none) {
-  .staff-drag-handle {
+  .drag-grip,
+  .staff-delete-btn,
+  .block-delete-btn {
     opacity: 1;
+  }
+  .drag-grip {
     width: 30px;
     height: 30px;
-    top: -8px;
-    left: -8px;
   }
+  .drag-grip--staff { right: 44px; }
+  .drag-grip--block { left: -4px; }
 }
 
-/* The card being dragged rides above the grid, following the pointer. The
-   white spread reads as a lifted card, and keeps whatever it passes over from
-   showing through, without changing the layout box. */
-.staff-card.is-dragging {
+/* Whatever is being dragged rides above the rest, following the pointer. */
+.staff-card.is-dragging,
+.section-block.is-dragging,
+.sidebar-nav li.is-dragging {
   z-index: 20;
   will-change: transform;
-  background: var(--white);
-  border-radius: 10px;
-  box-shadow: 0 0 0 10px var(--white), 0 12px 26px rgba(0,0,0,0.16);
 }
-.staff-card.is-dragging .staff-drag-handle { opacity: 1; cursor: grabbing; }
-.staff-card.is-dragging .staff-delete-btn { opacity: 0; }
+.staff-card.is-dragging {
+  border-color: transparent;
+  box-shadow: 0 14px 30px rgba(0,0,0,0.18);
+}
+/* A block has no background of its own; the white spread gives it one so it
+   covers what it passes over, without changing the layout box. */
+.section-block.is-dragging {
+  background: var(--white);
+  border-top-color: transparent;
+  box-shadow: 0 0 0 12px var(--white), 0 14px 30px rgba(0,0,0,0.14);
+}
+.sidebar-nav li.is-dragging { background: rgba(255,255,255,0.12); }
+
+.is-dragging .drag-grip { opacity: 1; cursor: grabbing; }
+.is-dragging .staff-delete-btn,
+.is-dragging .block-delete-btn { opacity: 0; }
 
 body.is-reordering { cursor: grabbing; user-select: none; }
 
