@@ -373,6 +373,8 @@
     document.addEventListener('click', e => {
       const anchor = e.target.closest('a[href^="#"]');
       if (!anchor) return;
+      // A link being edited belongs to the editor, not to the nav.
+      if (anchor.closest('[contenteditable="true"]')) return;
       const id = anchor.getAttribute('href').slice(1);
       if (!id) return;
       const target = document.getElementById(id);

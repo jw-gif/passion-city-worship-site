@@ -385,6 +385,30 @@ body.menu-open .mobile-bar__toggle span:nth-child(3) { transform: translateY(-6.
 .content-body a { color: var(--accent); }
 .content-body a:hover { text-decoration: underline; }
 
+/* A button is the same link wearing one class — the only one the sanitizer
+   lets through — so it survives a save like any other markup. */
+.content-body a.btn {
+  display: inline-block;
+  margin: 6px 10px 6px 0;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--white);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  transition: background 0.15s;
+}
+.content-body a.btn:hover {
+  background: var(--accent-dark);
+  text-decoration: none;
+}
+.content-body a.btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 /* =============================================
    Welcome letter
    ============================================= */
@@ -680,6 +704,9 @@ footer a:hover { color: var(--accent); }
   color: #fff;
 }
 .format-toolbar button.active { color: var(--accent); }
+/* Icon buttons (link, button, unlink) sit next to the lettered ones. */
+.format-toolbar button svg { display: block; }
+.format-toolbar button[hidden] { display: none; }
 
 .toolbar-sep {
   width: 1px;

@@ -766,28 +766,133 @@
     });
   }
 
+  const RICH_BODY = '.content-body[contenteditable="true"]';
+
+  /** The rich-text body the caret is currently in, if any. */
+  function currentBody() {
+    const selection = window.getSelection();
+    if (!selection || !selection.rangeCount) return null;
+    let node = selection.anchorNode;
+    while (node && node.nodeType !== 1) node = node.parentNode;
+    return node ? node.closest(RICH_BODY) : null;
+  }
+
+  /** The link the caret is inside, if any. */
+  function currentLink() {
+    const body = currentBody();
+    if (!body) return null;
+    let node = window.getSelection().anchorNode;
+    while (node && node.nodeType !== 1) node = node.parentNode;
+    const link = node && node.closest('a');
+    return link && body.contains(link) ? link : null;
+  }
+
+  /** Light up the link controls to match whatever the caret is in. */
+  function syncToolbarState(link) {
+    toolbar.querySelectorAll('button[data-cmd]').forEach(button => {
+      const cmd = button.dataset.cmd;
+      if (cmd === 'link') button.classList.toggle('active', !!link);
+      else if (cmd === 'btn') button.classList.toggle('active', !!link && link.classList.contains('btn'));
+      else if (cmd === 'unlink') button.hidden = !link;
+    });
+  }
+
   document.addEventListener('selectionchange', () => {
     if (!editMode || !toolbar) return;
     const selection = window.getSelection();
-    if (!selection || selection.isCollapsed || !selection.rangeCount) {
+    if (!selection || !selection.rangeCount || !currentBody()) {
       hideToolbar();
       return;
     }
-    let node = selection.anchorNode;
-    while (node && node.nodeType !== 1) node = node.parentNode;
-    // Rich formatting only applies to the rich-text bodies.
-    const body = node && node.closest('.content-body[contenteditable="true"]');
-    if (!body) {
+    // Selected text can be formatted; a caret resting inside a link opens the
+    // toolbar too, so an existing link can be edited without selecting it.
+    const link = currentLink();
+    if (selection.isCollapsed && !link) {
       hideToolbar();
       return;
     }
-    const rect = selection.getRangeAt(0).getBoundingClientRect();
+    const rect =
+      selection.isCollapsed && link
+        ? link.getBoundingClientRect()
+        : selection.getRangeAt(0).getBoundingClientRect();
     if (!rect.width) {
       hideToolbar();
       return;
     }
+    syncToolbarState(link);
     showToolbarAt(rect);
   });
+
+  /* ── Links and buttons ── */
+
+  /** Put the caret back where it was before a prompt stole the focus. */
+  function keepSelection() {
+    const selection = window.getSelection();
+    const range = selection && selection.rangeCount ? selection.getRangeAt(0).cloneRange() : null;
+    const body = currentBody();
+    return () => {
+      if (!body || !range) return;
+      body.focus({ preventScroll: true });
+      const restored = window.getSelection();
+      restored.removeAllRanges();
+      restored.addRange(range);
+    };
+  }
+
+  /** Create a link over the selection, or re-address the one already there. */
+  function editLink() {
+    const existing = currentLink();
+    const restore = keepSelection();
+    const answer = prompt(
+      'Link address — a web address, mailto:someone@example.com, or #section',
+      existing ? existing.getAttribute('href') : 'https://'
+    );
+    restore();
+    if (answer === null) return; // cancelled
+
+    const href = answer.trim();
+    if (!href) {
+      removeLink();
+      return;
+    }
+    const safe = window.PCCSanitize.safeHref(href);
+    if (!safe) {
+      showToast('That link address is not allowed.', true);
+      return;
+    }
+    if (existing) {
+      existing.setAttribute('href', safe);
+    } else if (window.getSelection().isCollapsed) {
+      showToast('Select the words you want to link first.', true);
+      return;
+    } else {
+      document.execCommand('createLink', false, safe);
+    }
+    syncToolbarState(currentLink());
+  }
+
+  /** Unwrap a link, keeping its text. */
+  function removeLink() {
+    const link = currentLink();
+    if (!link) return;
+    const parent = link.parentNode;
+    while (link.firstChild) parent.insertBefore(link.firstChild, link);
+    parent.removeChild(link);
+    parent.normalize();
+    hideToolbar();
+  }
+
+  /** A button is a link wearing one extra class, so this is a toggle. */
+  function toggleButton() {
+    let link = currentLink();
+    if (!link) {
+      editLink(); // needs an address before it can be anything
+      link = currentLink();
+      if (!link) return;
+    }
+    link.classList.toggle('btn');
+    syncToolbarState(link);
+  }
 
   if (toolbar) {
     toolbar.addEventListener('mousedown', e => {
@@ -802,12 +907,30 @@
       else if (cmd === 'p') document.execCommand('formatBlock', false, 'p');
       else if (cmd === 'ul') document.execCommand('insertUnorderedList');
       else if (cmd === 'ol') document.execCommand('insertOrderedList');
+      else if (cmd === 'link') editLink();
+      else if (cmd === 'unlink') removeLink();
+      else if (cmd === 'btn') toggleButton();
       else if (cmd === 'removeFormat') {
         document.execCommand('removeFormat');
+        // Clearing formatting drops the link too, which is what it looks like
+        // it should do — execCommand leaves anchors alone.
+        removeLink();
         document.execCommand('formatBlock', false, 'p');
       } else document.execCommand(cmd);
     });
   }
+
+  /* A link inside the page is for editing while edit mode is on, not for
+     following — clicking one puts the caret in it and opens the toolbar. */
+  document.addEventListener(
+    'click',
+    e => {
+      if (!editMode) return;
+      const link = e.target.closest?.('a');
+      if (link && link.closest('[contenteditable="true"]')) e.preventDefault();
+    },
+    true
+  );
 
   /* ═══════════════════════════════════════════
      WIRING
