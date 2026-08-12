@@ -8,7 +8,9 @@
 
    The allowlist is deliberately tiny — exactly the tags the format toolbar
    can produce. Unknown elements are unwrapped (their text survives),
-   dangerous containers are dropped outright.
+   dangerous containers are dropped outright. Attributes are not carried over
+   at all; the two exceptions are a link's href, checked against a protocol
+   allowlist, and the single class that draws a link as a button.
    ============================================= */
 (function () {
   'use strict';
@@ -27,6 +29,10 @@
   const NORMALIZE = { B: 'STRONG', I: 'EM', DIV: 'P' };
 
   const SAFE_PROTOCOLS = ['http:', 'https:', 'mailto:', 'tel:'];
+
+  /* The only class an author can put on a link — it draws the link as a
+     button. Every other class, and every other attribute, is dropped. */
+  const LINK_CLASSES = new Set(['btn']);
 
   /** Returns the href unchanged if safe, or null if it must be dropped. */
   function safeHref(raw) {
@@ -82,6 +88,10 @@
         }
         const anchor = document.createElement('a');
         anchor.setAttribute('href', href);
+        const classes = (child.getAttribute('class') || '')
+          .split(/\s+/)
+          .filter(name => LINK_CLASSES.has(name));
+        if (classes.length) anchor.setAttribute('class', classes.join(' '));
         if (isExternal(href)) {
           anchor.setAttribute('target', '_blank');
           anchor.setAttribute('rel', 'noopener noreferrer');

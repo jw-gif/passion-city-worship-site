@@ -21,6 +21,13 @@ markdown.
 4. Change anything on the page:
    - Click any text to type over it. Selecting text in a content block pops up
      a small toolbar for bold, italic, headings, and lists.
+   - **Links and buttons.** Select some words and press the chain icon to make
+     them a link — a web address, `mailto:someone@…`, `tel:…`, or `#section`
+     for somewhere on this page. Clicking a link you already made opens the
+     same toolbar, with its address filled in ready to change; the broken-chain
+     icon removes the link and keeps the words. The pill icon between them
+     redraws a link as a button, and pressing it again turns it back into
+     ordinary text. Links to other sites open in a new tab automatically.
    - `Enter` in a heading, name, role, or description breaks the line there.
      (Addresses, sidebar labels, and block labels stay on one line.)
    - **Add block** / the small **×** on a block adds and removes content cards.
