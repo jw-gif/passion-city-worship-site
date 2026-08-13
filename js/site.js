@@ -46,16 +46,28 @@
     return { sections, staff };
   }
 
+  /* Asked for by name, not selected from the table: the table itself is
+     staff-only so that the list of copies stays behind the sign-in at /home,
+     while a copy you have the address for opens for anyone. */
   async function fetchPage(slug) {
-    const rows = await window.PCCApi.rest(
-      `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
-    );
-    if (!rows || !rows.length) return null;
-    const content = rows[0].content || {};
+    let row;
+    try {
+      row = await window.PCCApi.rpc('page_by_slug', { page_slug: slug });
+    } catch (err) {
+      // Before sql/public-handbook.sql is run there is no such function; a
+      // signed-in editor can still read the table directly.
+      console.warn('[pcc] page_by_slug unavailable, reading the table:', err);
+      const rows = await window.PCCApi.rest(
+        `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
+      );
+      row = rows && rows[0];
+    }
+    if (!row) return null;
+    const content = row.content || {};
     return {
       sections: content.sections || [],
       staff: content.staff || [],
-      page: { slug: rows[0].slug, title: rows[0].title },
+      page: { slug: row.slug, title: row.title },
     };
   }
 
@@ -500,7 +512,11 @@
     return result.live;
   }
 
-  /** Nothing is fetched while signed out — the page is a sign-in form then. */
+  /* A staff-only address fetches nothing without a session — the page is a
+     sign-in form then, and there is nothing to put on screen. */
+  const readable = () =>
+    window.PCCApi.isSignedIn() || !window.PCCEnv || !window.PCCEnv.requiresSignIn();
+
   function clearContent() {
     document.getElementById('sections')?.replaceChildren();
     document.getElementById('sidebarNav')?.replaceChildren();
@@ -513,7 +529,7 @@
     initMobileMenu();
     initSmoothScroll();
 
-    if (!window.PCCApi.isSignedIn()) {
+    if (!readable()) {
       clearContent();
       return;
     }
@@ -527,9 +543,10 @@
     }
   }
 
-  /* Signing in loads the page; signing out takes it off the screen again. */
+  /* Signing in loads a staff-only page. Signing out takes one off the screen —
+     but the handbook stays up, since reading it never needed an account. */
   window.addEventListener('pcc:auth', async () => {
-    if (!window.PCCApi.isSignedIn()) {
+    if (!readable()) {
       clearContent();
       return;
     }

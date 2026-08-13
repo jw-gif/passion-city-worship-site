@@ -12,6 +12,23 @@
   const config = window.PCC || {};
   const host = location.hostname.toLowerCase();
 
+  /* Who has to sign in, and where.
+
+     Pages are open to anyone holding the link — the handbook at /, and each
+     copy at its own address. That is what the links are for. The index at
+     /home is the exception: a list of every version, which is a staff view of
+     the place rather than something to hand out. */
+  function requiresSignIn() {
+    const path = location.pathname.replace(/^\/+|\/+$/g, '').replace(/\.html$/i, '');
+    return path === 'home';
+  }
+
+  /* The markup ships locked so a gated page cannot flash its contents before
+     the session is known. On an open page that comes straight back off. */
+  if (!requiresSignIn() || (window.PCCApi && window.PCCApi.isSignedIn())) {
+    document.body.classList.remove('is-locked');
+  }
+
   const hostOf = url => {
     if (!url) return '';
     try {
@@ -59,5 +76,5 @@
   document.addEventListener('DOMContentLoaded', apply);
   window.addEventListener('pcc:auth', apply);
 
-  window.PCCEnv = { isStaging: () => isStaging };
+  window.PCCEnv = { isStaging: () => isStaging, requiresSignIn };
 })();

@@ -1,9 +1,7 @@
-# The offline snapshot is the whole handbook — staff addresses, compensation,
-# the lot — as one public JSON file. Publishing it would hand out everything
-# the sign-in is there to protect, so it stays in the repo as a local backup
-# and is not deployed. (It could never have been used anyway once sign-in was
-# required: reaching it means Supabase is down, and signing in needs Supabase.)
-content/
-
 # Not part of the site: run these by hand in the Supabase SQL editor.
 sql/
+
+# content/fallback.json is deployed again. It is a copy of the handbook, and
+# the handbook is readable by anyone with the link, so publishing it gives
+# nothing away that / does not — and it is what the site falls back to when
+# Supabase is unreachable.
