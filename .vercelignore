@@ -1,0 +1,9 @@
+# The offline snapshot is the whole handbook — staff addresses, compensation,
+# the lot — as one public JSON file. Publishing it would hand out everything
+# the sign-in is there to protect, so it stays in the repo as a local backup
+# and is not deployed. (It could never have been used anyway once sign-in was
+# required: reaching it means Supabase is down, and signing in needs Supabase.)
+content/
+
+# Not part of the site: run these by hand in the Supabase SQL editor.
+sql/

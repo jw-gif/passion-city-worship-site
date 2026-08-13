@@ -1,27 +1,34 @@
 /* =============================================
    Staff sign-in
 
-   A small dialog behind the gear in the lower-left corner. Visitors never
-   need it; staff use it to unlock the Edit button.
+   Nothing here is public: signed out, the page is a sign-in form and nothing
+   else. The gear in the corner is only a way back out again.
+
+   This is the front door, not the lock. The lock is the read policy on the
+   content tables (sql/private-content.sql) — without that, the content is
+   readable straight from the API whatever this file draws.
    ============================================= */
 (function () {
   'use strict';
 
   const api = window.PCCApi;
 
-  let dialog, form, emailInput, passwordInput, errorBox, submitButton;
+  let lock, form, emailInput, passwordInput, errorBox, submitButton;
 
   function build() {
-    dialog = document.createElement('div');
-    dialog.className = 'auth-modal';
-    dialog.hidden = true;
-    dialog.innerHTML = `
-      <div class="auth-modal__backdrop" data-close="1"></div>
-      <div class="auth-modal__panel" role="dialog" aria-modal="true"
+    lock = document.createElement('div');
+    lock.className = 'auth-lock';
+    lock.id = 'authLock';
+    lock.innerHTML = `
+      <div class="auth-lock__panel" role="dialog" aria-modal="true"
            aria-labelledby="authTitle">
-        <h2 id="authTitle">Staff sign-in</h2>
-        <p class="auth-modal__hint">
-          For worship staff only. Signing in lets you edit this handbook.
+        <span class="sidebar-logo__org">Passion City Church</span>
+        <!-- On staging this is the only marker visible before signing in,
+             since the sidebar that usually carries it is hidden. -->
+        <span class="env-badge">Staging</span>
+        <h1 id="authTitle">Worship Team</h1>
+        <p class="auth-lock__hint">
+          This handbook is for the worship team. Sign in to read it.
         </p>
         <form novalidate>
           <label for="authEmail">Email</label>
@@ -29,27 +36,24 @@
           <label for="authPassword">Password</label>
           <input id="authPassword" type="password" autocomplete="current-password" required>
           <p class="auth-modal__error" role="alert" hidden></p>
-          <div class="auth-modal__actions">
-            <button type="button" class="auth-modal__cancel" data-close="1">Cancel</button>
+          <div class="auth-lock__actions">
             <button type="submit" class="auth-modal__submit">Sign in</button>
           </div>
         </form>
+        <p class="auth-lock__foot">
+          Trouble getting in? Email
+          <a href="mailto:worship@passioncitychurch.com">worship@passioncitychurch.com</a>.
+        </p>
       </div>`;
-    document.body.appendChild(dialog);
+    document.body.appendChild(lock);
 
-    form = dialog.querySelector('form');
-    emailInput = dialog.querySelector('#authEmail');
-    passwordInput = dialog.querySelector('#authPassword');
-    errorBox = dialog.querySelector('.auth-modal__error');
-    submitButton = dialog.querySelector('.auth-modal__submit');
+    form = lock.querySelector('form');
+    emailInput = lock.querySelector('#authEmail');
+    passwordInput = lock.querySelector('#authPassword');
+    errorBox = lock.querySelector('.auth-modal__error');
+    submitButton = lock.querySelector('.auth-modal__submit');
 
-    dialog.addEventListener('click', e => {
-      if (e.target.closest('[data-close]')) close();
-    });
     form.addEventListener('submit', submit);
-    document.addEventListener('keydown', e => {
-      if (e.key === 'Escape' && !dialog.hidden) close();
-    });
   }
 
   function showError(message) {
@@ -57,19 +61,18 @@
     errorBox.hidden = !message;
   }
 
-  function open() {
-    if (!dialog) build();
+  /** Locked or not, decided only by whether there is a session. */
+  function applyLock() {
+    const locked = !api.isSignedIn();
+    document.body.classList.toggle('is-locked', locked);
+    if (!locked) {
+      if (lock) lock.hidden = true;
+      return;
+    }
+    if (!lock) build();
+    lock.hidden = false;
     showError('');
     form.reset();
-    dialog.hidden = false;
-    document.body.classList.add('auth-open');
-    emailInput.focus();
-  }
-
-  function close() {
-    if (!dialog) return;
-    dialog.hidden = true;
-    document.body.classList.remove('auth-open');
   }
 
   async function submit(e) {
@@ -89,11 +92,7 @@
 
     try {
       await api.signIn(email, password);
-      close();
-      // If the page had fallen back to offline content, this pulls the live
-      // copy now that we have a session.
-      if (!window.PCCSite.isLive) await window.PCCSite.reload();
-      window.PCCEditor?.showToast('Signed in — the Edit button is now available.');
+      // The pcc:auth event unlocks the page and loads the content.
     } catch (err) {
       showError(err.message || 'Sign-in failed. Please try again.');
       passwordInput.select();
@@ -103,37 +102,44 @@
     }
   }
 
-  /* ── sign-in gear ────────────────────────────────────────────────── */
+  /* ── sign-out gear ───────────────────────────────────────────────── */
 
   function syncControl() {
     const button = document.getElementById('adminToggle');
     if (!button) return;
     const signedIn = api.isSignedIn();
+    // Signed out there is nothing for it to do — the form has the page.
+    button.hidden = !signedIn;
     // The gear's label, not its contents — writing textContent here would
     // delete the SVG.
-    const label = signedIn ? `Sign out (${api.currentEmail()})` : 'Staff sign-in';
+    const label = `Sign out (${api.currentEmail()})`;
     button.setAttribute('aria-label', label);
     button.title = label;
     button.classList.toggle('is-signed-in', signedIn);
   }
 
   document.addEventListener('DOMContentLoaded', () => {
+    applyLock();
     const button = document.getElementById('adminToggle');
-    if (!button) return;
-    button.addEventListener('click', async () => {
-      if (!api.isSignedIn()) {
-        open();
-        return;
-      }
-      if (window.PCCEditor?.isEditing() &&
-          !confirm('You have unsaved changes. Sign out and discard them?')) {
-        return;
-      }
-      await api.signOut();
-      window.PCCEditor?.showToast('Signed out.');
-    });
+    if (button) {
+      button.addEventListener('click', async () => {
+        if (!api.isSignedIn()) return;
+        if (window.PCCEditor?.isEditing() &&
+            !confirm('You have unsaved changes. Sign out and discard them?')) {
+          return;
+        }
+        await api.signOut();
+      });
+    }
     syncControl();
   });
 
-  window.addEventListener('pcc:auth', syncControl);
+  window.addEventListener('pcc:auth', () => {
+    applyLock();
+    syncControl();
+    if (api.isSignedIn()) emailInput && (emailInput.value = '');
+  });
+
+  // Lock immediately, before anything renders, if there is no session at all.
+  if (!api.isSignedIn()) document.body.classList.add('is-locked');
 })();

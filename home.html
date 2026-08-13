@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="static/favicon.svg">
   <link rel="stylesheet" href="static/css/style.css">
 </head>
-<body class="pages-body">
+<body class="pages-body is-locked">
 
   <main class="pages-wrap">
     <header class="pages-header">
@@ -29,13 +29,7 @@
       </p>
     </header>
 
-    <!-- Everything below is for signed-in staff; visitors see the prompt. -->
-    <div class="pages-gate" id="pagesGate" hidden>
-      <h2>Staff sign-in required</h2>
-      <p>Sign in with the shared worship staff account to see and manage the pages.</p>
-      <button type="button" class="btn" id="gateSignIn">Sign in</button>
-    </div>
-
+    <!-- Signed-out visitors never get this far: the page is a sign-in form. -->
     <div id="pagesPanel" hidden>
       <div class="pages-toolbar">
         <button type="button" class="btn" id="newPageBtn">Duplicate the handbook</button>
