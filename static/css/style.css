@@ -1223,6 +1223,143 @@ body.is-stale .stale-banner { display: block; }
 }
 
 /* =============================================
+   Page index (/home)
+   ============================================= */
+.pages-body { background: var(--off-white); }
+
+.pages-wrap {
+  max-width: 900px;
+  margin-inline: auto;
+  padding: clamp(48px, 8vw, 96px) var(--gutter) 120px;
+}
+
+.pages-header h1 {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+}
+.pages-lede {
+  margin-top: 14px;
+  max-width: 56ch;
+  color: var(--gray-600);
+  line-height: 1.65;
+}
+
+.pages-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin: 40px 0 20px;
+}
+.pages-hint {
+  font-size: 0.78rem;
+  color: var(--gray-600);
+}
+
+/* The page index reuses the handbook's button, which is otherwise only
+   available inside a content body. */
+.pages-wrap .btn,
+.load-error .btn {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--white);
+  border: none;
+  font-family: var(--font);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.pages-wrap .btn:hover,
+.load-error .btn:hover { background: var(--accent-dark); }
+.load-error .btn { margin-top: 20px; }
+
+.pages-list { display: grid; gap: 12px; }
+
+.page-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  background: var(--white);
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(13,13,13,0.05), 0 10px 28px -12px rgba(13,13,13,0.16);
+}
+.page-card--handbook { box-shadow: 0 0 0 1.5px var(--accent), 0 10px 28px -12px rgba(13,13,13,0.16); }
+
+.page-card__main { min-width: 0; }
+.page-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--black);
+}
+.page-card__title:hover { color: var(--accent); }
+
+.page-card__meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 0.72rem;
+  color: var(--gray-400);
+}
+.page-card__slug {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--gray-600);
+}
+.page-card__tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--off-white);
+  color: var(--gray-600);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.6rem;
+}
+
+.page-card__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.page-action {
+  background: none;
+  border: 1px solid var(--gray-200);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-family: var(--font);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gray-600);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.page-action:hover { border-color: var(--accent); color: var(--accent); }
+.page-action--danger:hover { border-color: #fcc; background: #fee; color: #c00; }
+
+.pages-gate, .pages-empty {
+  background: var(--white);
+  border-radius: 14px;
+  padding: 32px;
+  margin-top: 40px;
+  box-shadow: 0 1px 2px rgba(13,13,13,0.05), 0 10px 28px -12px rgba(13,13,13,0.16);
+}
+.pages-gate h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+.pages-gate p, .pages-empty { color: var(--gray-600); font-size: 0.9rem; line-height: 1.6; }
+.pages-gate .btn { margin-top: 20px; }
+
+@media (max-width: 560px) {
+  .page-card { align-items: flex-start; }
+  .page-card__actions { width: 100%; }
+}
+
+/* =============================================
    Staff sign-in dialog
    ============================================= */
 .auth-modal {

@@ -713,7 +713,7 @@
     saveButton.textContent = 'Saving…';
 
     try {
-      await api.rpc('save_site', { payload });
+      await site.savePayload(payload);
       editMode = false;
       teardownEditUi();
       // Re-read from the database so what's on screen is exactly what's stored.

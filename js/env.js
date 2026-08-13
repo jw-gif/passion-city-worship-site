@@ -33,6 +33,10 @@
   function apply() {
     document.body.classList.toggle('is-staging', isStaging);
 
+    // The index of every version is a staff tool, not a visitor's business.
+    const pagesLink = document.getElementById('pagesLink');
+    if (pagesLink) pagesLink.hidden = !(window.PCCApi && window.PCCApi.isSignedIn());
+
     const link = document.getElementById('envLink');
     if (!link) return;
 
