@@ -13,10 +13,10 @@ markdown.
 
 ## Editing the site
 
-1. Open the site and click **Staff login** at the bottom of the left sidebar.
+1. Open the site. Signed out, it is a sign-in form and nothing else.
 2. Sign in with the shared worship staff account. (The email is
    `worship@passioncitychurch.com`; the password is kept out of this repo —
-   ask whoever set it up.)
+   ask whoever set it up.) The gear in the lower-left corner signs you out again.
 3. An **Edit** button appears in the bottom-right corner. Click it.
 4. Change anything on the page:
    - Click any text to type over it. Selecting text in a content block pops up
@@ -56,8 +56,10 @@ markdown.
 
 ### After changing staff photos
 
-Uploaded photos go to Supabase Storage. Refresh the offline copy afterwards so
-it stays current:
+Uploaded photos go to Supabase Storage. `content/fallback.json` is a local
+backup of the content, no longer served to anyone (see *Why the site is
+private*), so refreshing it is optional housekeeping rather than something the
+site depends on:
 
 ```bash
 node tools/snapshot.mjs   # rewrites content/fallback.json
@@ -213,10 +215,11 @@ js/supabase.js      Small REST/Auth/Storage client (no supabase-js dependency)
 js/env.js           Tells the live site apart from the staging preview
 js/site.js          Loads content, renders the page, serializes it back for saving
 js/editor.js        Edit mode, and the single save call
-js/auth-ui.js       Staff sign-in dialog
+js/auth-ui.js       The sign-in form the whole site sits behind
 home.html           The index of every version, at /home
 js/pages.js         Listing, duplicating, renaming and deleting versions
 sql/multi-page.sql  One-time migration that adds the `pages` table
+sql/private-content.sql  One-time migration that makes reading require sign-in
 content/fallback.json  Committed copy of the content, used only when offline
 tools/snapshot.mjs  Regenerates the fallback copy from the database
 ```
@@ -236,14 +239,36 @@ Reads are open to everyone (`anon` can `SELECT`). Writes go exclusively through
 replaces everything in one transaction, and refuses a payload with zero
 sections so a client-side bug can't blank the handbook.
 
-### Why the site is public but unlisted
+### Why the site is private
 
-The handbook holds staff email addresses and compensation details, so
-`robots.txt`, a `noindex` meta tag, and an `X-Robots-Tag` header keep it out of
-search results. It is still readable by anyone with the link — that is
-deliberate, so new team members can be sent straight to it. If it ever needs to
-be genuinely private, the content tables would need a read policy requiring a
-signed-in user, and every team member would need an account.
+The handbook holds staff email addresses and compensation details, so nothing
+is readable without signing in. Three things have to hold for that, and all
+three are in place:
+
+1. **The page.** Signed out, every address — `/`, `/home`, and any copy —
+   renders a sign-in form and nothing else. No content is fetched at all until
+   there is a session, and signing out clears what is on screen.
+2. **The database.** `sql/private-content.sql` restricts `select` on
+   `sections`, `blocks`, `staff`, and `pages` to signed-in users. This is the
+   part that matters: the publishable key in `js/config.js` is public by
+   design, so without it the tables are readable straight from the REST
+   endpoint no matter what the page draws.
+3. **The offline snapshot.** `content/fallback.json` is the entire handbook in
+   one file. `.vercelignore` keeps it out of the deployment — it stays in the
+   repo as a local backup. (It could not have been used anyway: reaching it
+   means Supabase is unreachable, and signing in needs Supabase.)
+
+`robots.txt`, the `noindex` meta tag, and the `X-Robots-Tag` header stay, so
+nothing is indexed either.
+
+**Everyone who reads the handbook now needs to sign in** — with their own
+account, or with the shared worship staff login. That includes anyone you send
+a copy's link to.
+
+> **Still public:** staff photos. They sit in a public Storage bucket, so a
+> photo URL opens for anyone who has it. Closing that means a private bucket
+> and signed URLs per photo — a change to how photos load, not a policy. A
+> photo with no name attached is a smaller exposure than the handbook.
 
 ### If Supabase is unreachable
 

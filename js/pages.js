@@ -13,7 +13,6 @@
 
   const api = window.PCCApi;
 
-  const gate = document.getElementById('pagesGate');
   const panel = document.getElementById('pagesPanel');
   const list = document.getElementById('pagesList');
   const empty = document.getElementById('pagesEmpty');
@@ -149,13 +148,12 @@
      ═══════════════════════════════════════════ */
 
   async function load() {
+    // The lock screen has the page when signed out; nothing to fetch.
     if (!api.isSignedIn()) {
-      gate.hidden = false;
       panel.hidden = true;
       showError('');
       return;
     }
-    gate.hidden = true;
     panel.hidden = false;
 
     let pages;
@@ -263,9 +261,6 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('newPageBtn')?.addEventListener('click', () => duplicate(null, 'Handbook'));
-    document.getElementById('gateSignIn')?.addEventListener('click', () => {
-      document.getElementById('adminToggle')?.click();
-    });
     load();
   });
 

@@ -1360,6 +1360,103 @@ body.is-stale .stale-banner { display: block; }
 }
 
 /* =============================================
+   Locked out — the whole page, until you sign in
+   ============================================= */
+
+/* Everything except the sign-in panel is off. A blunt rule on purpose: there
+   is no list of things to keep in step as the page grows. */
+body.is-locked > *:not(.auth-lock) { display: none !important; }
+body.is-locked { background: var(--black); }
+
+.auth-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--black);
+  overflow-y: auto;
+}
+.auth-lock[hidden] { display: none; }
+
+.auth-lock__panel {
+  width: 100%;
+  max-width: 380px;
+  color: var(--white);
+}
+.auth-lock__panel h1 {
+  font-size: clamp(2rem, 6vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+  margin: 6px 0 14px;
+}
+.auth-lock__hint {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+.auth-lock__panel label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+}
+.auth-lock__panel input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 8px;
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 0.92rem;
+}
+.auth-lock__panel input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.09);
+}
+.auth-lock__actions { margin-top: 4px; }
+.auth-lock__actions .auth-modal__submit {
+  width: 100%;
+  padding: 13px 24px;
+  border: none;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.auth-lock__actions .auth-modal__submit:hover { background: var(--accent-dark); }
+.auth-lock__actions .auth-modal__submit:disabled { opacity: 0.6; cursor: default; }
+
+.auth-lock .auth-modal__error {
+  margin: -8px 0 14px;
+  color: #ff9b9b;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.auth-lock__foot {
+  margin-top: 28px;
+  font-size: 0.72rem;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.35);
+}
+.auth-lock__foot a { color: var(--accent); }
+
+/* =============================================
    Staff sign-in dialog
    ============================================= */
 .auth-modal {

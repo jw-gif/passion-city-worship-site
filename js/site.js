@@ -500,10 +500,23 @@
     return result.live;
   }
 
+  /** Nothing is fetched while signed out — the page is a sign-in form then. */
+  function clearContent() {
+    document.getElementById('sections')?.replaceChildren();
+    document.getElementById('sidebarNav')?.replaceChildren();
+    window.PCCSite.isLive = false;
+    window.PCCSite.page = null;
+  }
+
   async function boot() {
     // One-time listeners; reload() may run many times after this.
     initMobileMenu();
     initSmoothScroll();
+
+    if (!window.PCCApi.isSignedIn()) {
+      clearContent();
+      return;
+    }
 
     await reload();
 
@@ -513,6 +526,15 @@
       if (target) target.scrollIntoView();
     }
   }
+
+  /* Signing in loads the page; signing out takes it off the screen again. */
+  window.addEventListener('pcc:auth', async () => {
+    if (!window.PCCApi.isSignedIn()) {
+      clearContent();
+      return;
+    }
+    if (!document.querySelector('#sections .section')) await reload();
+  });
 
   window.PCCSite = {
     boot,
