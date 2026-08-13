@@ -13,10 +13,11 @@ markdown.
 
 ## Editing the site
 
-1. Open the site. Signed out, it is a sign-in form and nothing else.
+1. Open the site — anyone can read it — and click the gear in the lower-left
+   corner.
 2. Sign in with the shared worship staff account. (The email is
    `worship@passioncitychurch.com`; the password is kept out of this repo —
-   ask whoever set it up.) The gear in the lower-left corner signs you out again.
+   ask whoever set it up.) The same gear signs you out again afterwards.
 3. An **Edit** button appears in the bottom-right corner. Click it.
 4. Change anything on the page:
    - Click any text to type over it. Selecting text in a content block pops up
@@ -56,10 +57,9 @@ markdown.
 
 ### After changing staff photos
 
-Uploaded photos go to Supabase Storage. `content/fallback.json` is a local
-backup of the content, no longer served to anyone (see *Why the site is
-private*), so refreshing it is optional housekeeping rather than something the
-site depends on:
+Uploaded photos go to Supabase Storage. Refresh the offline copy afterwards so
+it stays current — it is what the handbook falls back to when Supabase cannot
+be reached:
 
 ```bash
 node tools/snapshot.mjs   # rewrites content/fallback.json
@@ -71,15 +71,16 @@ git commit -am "Refresh content snapshot" && git push
 ## Other versions of the page
 
 `/home` lists the handbook and every copy of it, and is where copies are made.
-Sign in first — the copies are shareable by link, but the index of them is not
-left in the open.
+It needs a sign-in, and so does each copy — unlike the handbook itself, which
+anyone with the link can read.
 
 - **Duplicate the handbook** takes a snapshot of everything at `/` and puts it
   at an address you choose, so `/grove-2026` or `/summer-retreat` is a
   complete, separately editable version. **Duplicate** on any row does the same
   from that row instead.
 - Copies are edited exactly like the handbook: open the address, sign in, hit
-  **Edit**. Saving a copy only changes that copy.
+  **Edit**. Saving a copy only changes that copy. Anyone you send a copy's link
+  to needs an account to open it — see *Who can read what*.
 - **Rename** changes the name or the address. Changing an address breaks any
   link already shared for the old one.
 - **Delete** removes a copy. The handbook itself cannot be renamed or deleted
@@ -87,12 +88,12 @@ left in the open.
 
 Addresses are lowercase letters, numbers, and dashes.
 
-> **One-time setup.** Extra pages need a table and a few functions that are not
-> in the database yet. Open the Supabase dashboard → **SQL editor**, paste the
-> contents of [`sql/multi-page.sql`](sql/multi-page.sql), and run it once. It is
-> additive: it does not touch `sections`, `blocks`, `staff`, or `save_site`, so
-> the handbook is unaffected either way — before you run it, `/home` simply says
-> what is missing.
+> **One-time setup.** Two files, run once each in the Supabase dashboard →
+> **SQL editor**, in this order:
+> [`sql/multi-page.sql`](sql/multi-page.sql) adds the `pages` table and its
+> functions, and [`sql/public-handbook.sql`](sql/public-handbook.sql) sets who
+> may read what. Neither touches `save_site`, so the handbook is unaffected
+> either way — before the first one is run, `/home` simply says what is missing.
 
 ### How the copies are stored
 
@@ -219,7 +220,7 @@ js/auth-ui.js       The sign-in form the whole site sits behind
 home.html           The index of every version, at /home
 js/pages.js         Listing, duplicating, renaming and deleting versions
 sql/multi-page.sql  One-time migration that adds the `pages` table
-sql/private-content.sql  One-time migration that makes reading require sign-in
+sql/public-handbook.sql  One-time migration: open handbook, staff-only copies
 content/fallback.json  Committed copy of the content, used only when offline
 tools/snapshot.mjs  Regenerates the fallback copy from the database
 ```
@@ -239,36 +240,40 @@ Reads are open to everyone (`anon` can `SELECT`). Writes go exclusively through
 replaces everything in one transaction, and refuses a payload with zero
 sections so a client-side bug can't blank the handbook.
 
-### Why the site is private
+### Who can read what
 
-The handbook holds staff email addresses and compensation details, so nothing
-is readable without signing in. Three things have to hold for that, and all
-three are in place:
+| Address | Signed out | Signed in |
+| --- | --- | --- |
+| `/` — the handbook | Readable | Readable, and editable |
+| `/home` — the index of versions | Sign-in form | The list |
+| `/<slug>` — a copy | Sign-in form | Readable, and editable |
 
-1. **The page.** Signed out, every address — `/`, `/home`, and any copy —
-   renders a sign-in form and nothing else. No content is fetched at all until
-   there is a session, and signing out clears what is on screen.
-2. **The database.** `sql/private-content.sql` restricts `select` on
-   `sections`, `blocks`, `staff`, and `pages` to signed-in users. This is the
-   part that matters: the publishable key in `js/config.js` is public by
-   design, so without it the tables are readable straight from the REST
-   endpoint no matter what the page draws.
-3. **The offline snapshot.** `content/fallback.json` is the entire handbook in
-   one file. `.vercelignore` keeps it out of the deployment — it stays in the
-   repo as a local backup. (It could not have been used anyway: reaching it
-   means Supabase is unreachable, and signing in needs Supabase.)
+The handbook is open on purpose: it is meant to be sent to anyone joining the
+team, and asking them for a password first defeats that. Editing it needs the
+staff sign-in, which the gear in the lower-left corner opens.
+
+The copies are staff-only, because they are drafts until somebody decides
+otherwise. That is enforced in two places, and both matter:
+
+1. **The page.** A staff-only address renders a sign-in form and nothing else,
+   and fetches nothing until there is a session.
+2. **The database.** `sql/public-handbook.sql` restricts `select` on `pages`
+   to signed-in users, while leaving `sections`, `blocks`, and `staff` open.
+   This is the part that counts: the publishable key in `js/config.js` is
+   public by design, so without it the copies are readable straight from the
+   REST endpoint no matter what the page draws.
+
+**To share a copy the way the handbook is shared**, its row needs a flag of
+its own and a policy to match — a small change, noted at the bottom of the SQL
+file. Ask and it can be added.
 
 `robots.txt`, the `noindex` meta tag, and the `X-Robots-Tag` header stay, so
 nothing is indexed either.
 
-**Everyone who reads the handbook now needs to sign in** — with their own
-account, or with the shared worship staff login. That includes anyone you send
-a copy's link to.
-
-> **Still public:** staff photos. They sit in a public Storage bucket, so a
-> photo URL opens for anyone who has it. Closing that means a private bucket
-> and signed URLs per photo — a change to how photos load, not a policy. A
-> photo with no name attached is a smaller exposure than the handbook.
+The handbook holds staff email addresses and compensation details and is
+readable by anyone with the link — unlisted rather than secret, which is what
+it was designed to be. Staff photos sit in a public Storage bucket, so a photo
+URL opens for anyone holding it.
 
 ### If Supabase is unreachable
 

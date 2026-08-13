@@ -12,6 +12,23 @@
   const config = window.PCC || {};
   const host = location.hostname.toLowerCase();
 
+  /* Who has to sign in, and where.
+
+     The handbook at / is open to the team — that is the whole point of being
+     able to send someone the link. Everything else is staff-only: the index of
+     versions at /home, and the copies at their own addresses, which are drafts
+     until somebody decides otherwise. */
+  function requiresSignIn() {
+    const path = location.pathname.replace(/^\/+|\/+$/g, '').replace(/\.html$/i, '');
+    return !(path === '' || path === 'index');
+  }
+
+  /* The markup ships locked so a gated page cannot flash its contents before
+     the session is known. On an open page that comes straight back off. */
+  if (!requiresSignIn() || (window.PCCApi && window.PCCApi.isSignedIn())) {
+    document.body.classList.remove('is-locked');
+  }
+
   const hostOf = url => {
     if (!url) return '';
     try {
@@ -59,5 +76,5 @@
   document.addEventListener('DOMContentLoaded', apply);
   window.addEventListener('pcc:auth', apply);
 
-  window.PCCEnv = { isStaging: () => isStaging };
+  window.PCCEnv = { isStaging: () => isStaging, requiresSignIn };
 })();

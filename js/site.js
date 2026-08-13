@@ -500,7 +500,11 @@
     return result.live;
   }
 
-  /** Nothing is fetched while signed out — the page is a sign-in form then. */
+  /* A staff-only address fetches nothing without a session — the page is a
+     sign-in form then, and there is nothing to put on screen. */
+  const readable = () =>
+    window.PCCApi.isSignedIn() || !window.PCCEnv || !window.PCCEnv.requiresSignIn();
+
   function clearContent() {
     document.getElementById('sections')?.replaceChildren();
     document.getElementById('sidebarNav')?.replaceChildren();
@@ -513,7 +517,7 @@
     initMobileMenu();
     initSmoothScroll();
 
-    if (!window.PCCApi.isSignedIn()) {
+    if (!readable()) {
       clearContent();
       return;
     }
@@ -527,9 +531,10 @@
     }
   }
 
-  /* Signing in loads the page; signing out takes it off the screen again. */
+  /* Signing in loads a staff-only page. Signing out takes one off the screen —
+     but the handbook stays up, since reading it never needed an account. */
   window.addEventListener('pcc:auth', async () => {
-    if (!window.PCCApi.isSignedIn()) {
+    if (!readable()) {
       clearContent();
       return;
     }

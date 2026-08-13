@@ -1,17 +1,20 @@
 /* =============================================
    Staff sign-in
 
-   Nothing here is public: signed out, the page is a sign-in form and nothing
-   else. The gear in the corner is only a way back out again.
+   One form, doing two jobs. On the handbook, which anyone on the team can
+   read, it is a dialog the gear opens when someone wants to edit. On the
+   staff-only addresses — /home and the copies — it is the page itself until
+   there is a session.
 
-   This is the front door, not the lock. The lock is the read policy on the
-   content tables (sql/private-content.sql) — without that, the content is
+   Either way this is the front door, not the lock. The lock is the read
+   policy on the tables (sql/public-handbook.sql): without it the copies are
    readable straight from the API whatever this file draws.
    ============================================= */
 (function () {
   'use strict';
 
   const api = window.PCCApi;
+  const gated = () => !window.PCCEnv || window.PCCEnv.requiresSignIn();
 
   let lock, form, emailInput, passwordInput, errorBox, submitButton;
 
@@ -27,9 +30,7 @@
              since the sidebar that usually carries it is hidden. -->
         <span class="env-badge">Staging</span>
         <h1 id="authTitle">Worship Team</h1>
-        <p class="auth-lock__hint">
-          This handbook is for the worship team. Sign in to read it.
-        </p>
+        <p class="auth-lock__hint" id="authHint"></p>
         <form novalidate>
           <label for="authEmail">Email</label>
           <input id="authEmail" type="email" autocomplete="username" required>
@@ -38,6 +39,7 @@
           <p class="auth-modal__error" role="alert" hidden></p>
           <div class="auth-lock__actions">
             <button type="submit" class="auth-modal__submit">Sign in</button>
+            <button type="button" class="auth-lock__cancel" hidden>Back to the handbook</button>
           </div>
         </form>
         <p class="auth-lock__foot">
@@ -54,6 +56,33 @@
     submitButton = lock.querySelector('.auth-modal__submit');
 
     form.addEventListener('submit', submit);
+    lock.querySelector('.auth-lock__cancel').addEventListener('click', hide);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && lock && !lock.hidden && !gated()) hide();
+    });
+  }
+
+  /** Close the form. Only ever possible where the page does not need it. */
+  function hide() {
+    if (!lock || gated()) return;
+    lock.hidden = true;
+    document.body.classList.remove('is-locked');
+  }
+
+  /** Open the form: as the page on a gated address, as a dialog otherwise. */
+  function show() {
+    if (!lock) build();
+    const asGate = gated();
+    lock.classList.toggle('auth-lock--dialog', !asGate);
+    lock.querySelector('.auth-lock__cancel').hidden = asGate;
+    lock.querySelector('#authHint').textContent = asGate
+      ? 'This page is for the worship team. Sign in to see it.'
+      : 'Sign in to edit the handbook. Reading it needs no account.';
+    lock.hidden = false;
+    document.body.classList.toggle('is-locked', asGate);
+    showError('');
+    form.reset();
+    emailInput.focus({ preventScroll: true });
   }
 
   function showError(message) {
@@ -61,18 +90,14 @@
     errorBox.hidden = !message;
   }
 
-  /** Locked or not, decided only by whether there is a session. */
+  /** A gated address with no session shows the form and nothing else. */
   function applyLock() {
-    const locked = !api.isSignedIn();
-    document.body.classList.toggle('is-locked', locked);
-    if (!locked) {
+    if (api.isSignedIn() || !gated()) {
+      document.body.classList.remove('is-locked');
       if (lock) lock.hidden = true;
       return;
     }
-    if (!lock) build();
-    lock.hidden = false;
-    showError('');
-    form.reset();
+    show();
   }
 
   async function submit(e) {
@@ -108,11 +133,12 @@
     const button = document.getElementById('adminToggle');
     if (!button) return;
     const signedIn = api.isSignedIn();
-    // Signed out there is nothing for it to do — the form has the page.
-    button.hidden = !signedIn;
+    // On a gated page the form already has the screen; there it would be a
+    // button to nowhere.
+    button.hidden = !signedIn && gated();
     // The gear's label, not its contents — writing textContent here would
     // delete the SVG.
-    const label = `Sign out (${api.currentEmail()})`;
+    const label = signedIn ? `Sign out (${api.currentEmail()})` : 'Staff sign-in';
     button.setAttribute('aria-label', label);
     button.title = label;
     button.classList.toggle('is-signed-in', signedIn);
@@ -123,7 +149,10 @@
     const button = document.getElementById('adminToggle');
     if (button) {
       button.addEventListener('click', async () => {
-        if (!api.isSignedIn()) return;
+        if (!api.isSignedIn()) {
+          show(); // open page: the gear is how staff get in
+          return;
+        }
         if (window.PCCEditor?.isEditing() &&
             !confirm('You have unsaved changes. Sign out and discard them?')) {
           return;
@@ -135,11 +164,13 @@
   });
 
   window.addEventListener('pcc:auth', () => {
-    applyLock();
+    if (api.isSignedIn() && lock) {
+      lock.hidden = true;
+      document.body.classList.remove('is-locked');
+      emailInput.value = '';
+    } else {
+      applyLock();
+    }
     syncControl();
-    if (api.isSignedIn()) emailInput && (emailInput.value = '');
   });
-
-  // Lock immediately, before anything renders, if there is no session at all.
-  if (!api.isSignedIn()) document.body.classList.add('is-locked');
 })();

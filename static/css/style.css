@@ -1381,6 +1381,33 @@ body.is-locked { background: var(--black); }
 }
 .auth-lock[hidden] { display: none; }
 
+/* Opened from the gear on a page that does not need it: a dialog over the
+   handbook, with a way back out. */
+.auth-lock--dialog { background: rgba(13,13,13,0.94); }
+.auth-lock--dialog .auth-lock__panel {
+  background: var(--off-black);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  padding: 32px 30px 26px;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+.auth-lock__cancel {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px 24px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.45);
+  font-family: var(--font);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.auth-lock__cancel:hover { color: var(--white); }
+.auth-lock__cancel[hidden] { display: none; }
+
 .auth-lock__panel {
   width: 100%;
   max-width: 380px;
