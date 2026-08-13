@@ -46,16 +46,28 @@
     return { sections, staff };
   }
 
+  /* Asked for by name, not selected from the table: the table itself is
+     staff-only so that the list of copies stays behind the sign-in at /home,
+     while a copy you have the address for opens for anyone. */
   async function fetchPage(slug) {
-    const rows = await window.PCCApi.rest(
-      `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
-    );
-    if (!rows || !rows.length) return null;
-    const content = rows[0].content || {};
+    let row;
+    try {
+      row = await window.PCCApi.rpc('page_by_slug', { page_slug: slug });
+    } catch (err) {
+      // Before sql/public-handbook.sql is run there is no such function; a
+      // signed-in editor can still read the table directly.
+      console.warn('[pcc] page_by_slug unavailable, reading the table:', err);
+      const rows = await window.PCCApi.rest(
+        `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
+      );
+      row = rows && rows[0];
+    }
+    if (!row) return null;
+    const content = row.content || {};
     return {
       sections: content.sections || [],
       staff: content.staff || [],
-      page: { slug: rows[0].slug, title: rows[0].title },
+      page: { slug: row.slug, title: row.title },
     };
   }
 

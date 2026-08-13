@@ -14,13 +14,13 @@
 
   /* Who has to sign in, and where.
 
-     The handbook at / is open to the team — that is the whole point of being
-     able to send someone the link. Everything else is staff-only: the index of
-     versions at /home, and the copies at their own addresses, which are drafts
-     until somebody decides otherwise. */
+     Pages are open to anyone holding the link — the handbook at /, and each
+     copy at its own address. That is what the links are for. The index at
+     /home is the exception: a list of every version, which is a staff view of
+     the place rather than something to hand out. */
   function requiresSignIn() {
     const path = location.pathname.replace(/^\/+|\/+$/g, '').replace(/\.html$/i, '');
-    return !(path === '' || path === 'index');
+    return path === 'home';
   }
 
   /* The markup ships locked so a gated page cannot flash its contents before

@@ -71,16 +71,15 @@ git commit -am "Refresh content snapshot" && git push
 ## Other versions of the page
 
 `/home` lists the handbook and every copy of it, and is where copies are made.
-It needs a sign-in, and so does each copy — unlike the handbook itself, which
-anyone with the link can read.
+It needs a sign-in; the pages it lists do not.
 
 - **Duplicate the handbook** takes a snapshot of everything at `/` and puts it
   at an address you choose, so `/grove-2026` or `/summer-retreat` is a
   complete, separately editable version. **Duplicate** on any row does the same
   from that row instead.
 - Copies are edited exactly like the handbook: open the address, sign in, hit
-  **Edit**. Saving a copy only changes that copy. Anyone you send a copy's link
-  to needs an account to open it — see *Who can read what*.
+  **Edit**. Saving a copy only changes that copy. Anyone you send the link to
+  can read it without an account.
 - **Rename** changes the name or the address. Changing an address breaks any
   link already shared for the old one.
 - **Delete** removes a copy. The handbook itself cannot be renamed or deleted
@@ -245,35 +244,42 @@ sections so a client-side bug can't blank the handbook.
 | Address | Signed out | Signed in |
 | --- | --- | --- |
 | `/` — the handbook | Readable | Readable, and editable |
-| `/home` — the index of versions | Sign-in form | The list |
-| `/<slug>` — a copy | Sign-in form | Readable, and editable |
+| `/<slug>` — a copy | Readable | Readable, and editable |
+| `/home` — the index of every version | Sign-in form | The list |
 
-The handbook is open on purpose: it is meant to be sent to anyone joining the
-team, and asking them for a password first defeats that. Editing it needs the
-staff sign-in, which the gear in the lower-left corner opens.
+Pages are open on purpose: a handbook you have to hand out a password for is
+not much use to someone joining the team, and a copy you cannot send to anyone
+is not worth making. Editing either needs the staff sign-in, which the gear in
+the lower-left corner opens.
 
-The copies are staff-only, because they are drafts until somebody decides
-otherwise. That is enforced in two places, and both matter:
+The index is the exception, and there is a subtlety in enforcing that. It is
+not enough for `/home` to ask for a sign-in, because the copies live in a
+`pages` table and a table can be listed: `select slug, title from pages` would
+hand anyone the very index the sign-in is protecting. So:
 
-1. **The page.** A staff-only address renders a sign-in form and nothing else,
-   and fetches nothing until there is a session.
-2. **The database.** `sql/public-handbook.sql` restricts `select` on `pages`
-   to signed-in users, while leaving `sections`, `blocks`, and `staff` open.
-   This is the part that counts: the publishable key in `js/config.js` is
-   public by design, so without it the copies are readable straight from the
-   REST endpoint no matter what the page draws.
+- `select` on `pages` is restricted to signed-in users — that is what `/home`
+  reads.
+- Anonymous readers get a copy through `page_by_slug()`, which returns the one
+  page asked for by name. **You can open a copy whose address you were given;
+  you cannot ask what addresses exist.**
 
-**To share a copy the way the handbook is shared**, its row needs a flag of
-its own and a policy to match — a small change, noted at the bottom of the SQL
-file. Ask and it can be added.
+Both halves are in `sql/public-handbook.sql`. The database is where this is
+decided, not the page: the publishable key in `js/config.js` is public by
+design, so anything a policy allows is readable no matter what the page draws.
+
+A short address can be guessed, the same as any unlisted link. If a copy ever
+needs to be genuinely private, give its row a flag and have `page_by_slug`
+refuse it unless the caller is an editor — a note at the foot of the SQL file
+says where.
 
 `robots.txt`, the `noindex` meta tag, and the `X-Robots-Tag` header stay, so
 nothing is indexed either.
 
-The handbook holds staff email addresses and compensation details and is
-readable by anyone with the link — unlisted rather than secret, which is what
-it was designed to be. Staff photos sit in a public Storage bucket, so a photo
-URL opens for anyone holding it.
+The handbook holds staff email addresses and compensation details, and it and
+every copy are readable by anyone with the link — unlisted rather than secret,
+which is what it was designed to be. `robots.txt`, the `noindex` meta tag and
+the `X-Robots-Tag` header keep them out of search results. Staff photos sit in
+a public Storage bucket, so a photo URL opens for anyone holding it.
 
 ### If Supabase is unreachable
 
