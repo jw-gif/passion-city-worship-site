@@ -66,6 +66,43 @@ git commit -am "Refresh content snapshot" && git push
 
 ---
 
+## Other versions of the page
+
+`/home` lists the handbook and every copy of it, and is where copies are made.
+Sign in first — the copies are shareable by link, but the index of them is not
+left in the open.
+
+- **Duplicate the handbook** takes a snapshot of everything at `/` and puts it
+  at an address you choose, so `/grove-2026` or `/summer-retreat` is a
+  complete, separately editable version. **Duplicate** on any row does the same
+  from that row instead.
+- Copies are edited exactly like the handbook: open the address, sign in, hit
+  **Edit**. Saving a copy only changes that copy.
+- **Rename** changes the name or the address. Changing an address breaks any
+  link already shared for the old one.
+- **Delete** removes a copy. The handbook itself cannot be renamed or deleted
+  from here.
+
+Addresses are lowercase letters, numbers, and dashes.
+
+> **One-time setup.** Extra pages need a table and a few functions that are not
+> in the database yet. Open the Supabase dashboard → **SQL editor**, paste the
+> contents of [`sql/multi-page.sql`](sql/multi-page.sql), and run it once. It is
+> additive: it does not touch `sections`, `blocks`, `staff`, or `save_site`, so
+> the handbook is unaffected either way — before you run it, `/home` simply says
+> what is missing.
+
+### How the copies are stored
+
+The handbook stays in the `sections`, `blocks`, and `staff` tables it has
+always used. A copy is one row in `pages`, holding the same `{sections, staff}`
+payload the editor already saves and the renderer already draws. That is why
+duplicating is a copy of a single value and needed no reshaping of the existing
+tables — at the cost of the original and its copies being stored differently.
+Staff photos are not copied; every version points at the same uploaded files.
+
+---
+
 ## Staging
 
 There are two copies of the site. **Production** is whatever is on `main`.
@@ -177,6 +214,9 @@ js/env.js           Tells the live site apart from the staging preview
 js/site.js          Loads content, renders the page, serializes it back for saving
 js/editor.js        Edit mode, and the single save call
 js/auth-ui.js       Staff sign-in dialog
+home.html           The index of every version, at /home
+js/pages.js         Listing, duplicating, renaming and deleting versions
+sql/multi-page.sql  One-time migration that adds the `pages` table
 content/fallback.json  Committed copy of the content, used only when offline
 tools/snapshot.mjs  Regenerates the fallback copy from the database
 ```
@@ -189,6 +229,7 @@ tools/snapshot.mjs  Regenerates the fallback copy from the database
 | `blocks`   | Content cards inside a `grid` section (and the welcome letter body). |
 | `staff`    | The staff directory, in display order.                            |
 | `editors`  | Allowlist of users permitted to save changes.                      |
+| `pages`    | Copies of the handbook, one row per URL slug (see `sql/multi-page.sql`). |
 
 Reads are open to everyone (`anon` can `SELECT`). Writes go exclusively through
 `public.save_site(payload jsonb)`, which requires an allowlisted editor,

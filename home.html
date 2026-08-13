@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Pages — Passion City Worship Team</title>
+  <meta name="description" content="Every version of the worship team handbook, and the controls to make another.">
+
+  <!-- Internal tool: reachable by link, kept out of search results. -->
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="googlebot" content="noindex, nofollow">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="theme-color" content="#0d0d0d">
+
+  <link rel="icon" href="static/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="static/favicon.svg">
+  <link rel="stylesheet" href="static/css/style.css">
+</head>
+<body class="pages-body">
+
+  <main class="pages-wrap">
+    <header class="pages-header">
+      <span class="eyebrow">Passion City Church</span>
+      <h1>Handbook pages</h1>
+      <p class="pages-lede">
+        The handbook, and any copy of it you have made. Each copy has its own
+        address to share, and is edited exactly the same way.
+      </p>
+    </header>
+
+    <!-- Everything below is for signed-in staff; visitors see the prompt. -->
+    <div class="pages-gate" id="pagesGate" hidden>
+      <h2>Staff sign-in required</h2>
+      <p>Sign in with the shared worship staff account to see and manage the pages.</p>
+      <button type="button" class="btn" id="gateSignIn">Sign in</button>
+    </div>
+
+    <div id="pagesPanel" hidden>
+      <div class="pages-toolbar">
+        <button type="button" class="btn" id="newPageBtn">Duplicate the handbook</button>
+        <span class="pages-hint" id="pagesHint"></span>
+      </div>
+
+      <ul class="pages-list" id="pagesList"></ul>
+
+      <p class="pages-empty" id="pagesEmpty" hidden>
+        No copies yet. <strong>Duplicate the handbook</strong> to make the first one.
+      </p>
+    </div>
+
+    <div class="load-error" id="pagesError" hidden></div>
+  </main>
+
+  <!-- Staff sign-in, same gear as the handbook. -->
+  <button type="button" class="staff-gear" id="adminToggle"
+          aria-label="Staff sign-in" title="Staff sign-in">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+  </button>
+
+  <script src="js/config.js"></script>
+  <script src="js/sanitize.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/env.js"></script>
+  <script src="js/pages.js"></script>
+  <script src="js/auth-ui.js"></script>
+</body>
+</html>

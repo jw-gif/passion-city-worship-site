@@ -20,6 +20,20 @@
     'blocks(label,body_html,position)&order=position.asc';
   const STAFF_SELECT = 'staff?select=name,role,email,photo_url&order=position.asc';
 
+  /** Which page the URL is asking for. "" is the handbook itself, at /. */
+  function currentSlug() {
+    const path = location.pathname.replace(/^\/+|\/+$/g, '').replace(/\.html$/i, '');
+    if (!path || path === 'index') return '';
+    try {
+      return decodeURIComponent(path).toLowerCase();
+    } catch {
+      return path.toLowerCase();
+    }
+  }
+
+  /* The handbook lives in the sections/blocks/staff tables. Every other page is
+     one row in `pages`, holding the same shape this file serializes and renders
+     — so the only difference between them is where the payload comes from. */
   async function fetchLive() {
     const [sections, staff] = await Promise.all([
       window.PCCApi.rest(SECTION_SELECT),
@@ -32,6 +46,19 @@
     return { sections, staff };
   }
 
+  async function fetchPage(slug) {
+    const rows = await window.PCCApi.rest(
+      `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
+    );
+    if (!rows || !rows.length) return null;
+    const content = rows[0].content || {};
+    return {
+      sections: content.sections || [],
+      staff: content.staff || [],
+      page: { slug: rows[0].slug, title: rows[0].title },
+    };
+  }
+
   async function fetchFallback() {
     const res = await fetch(window.PCC.FALLBACK_URL, { cache: 'no-cache' });
     if (!res.ok) throw new Error(`Snapshot unavailable (${res.status})`);
@@ -39,6 +66,15 @@
   }
 
   async function loadSite() {
+    const slug = currentSlug();
+
+    if (slug) {
+      // A shared copy. There is no offline snapshot of one, so a failure here
+      // is a failure — better than showing the handbook under its address.
+      const data = await fetchPage(slug);
+      return data ? { data, live: true } : { missing: true, live: true };
+    }
+
     try {
       return { data: await fetchLive(), live: true };
     } catch (liveError) {
@@ -46,6 +82,14 @@
       const data = await fetchFallback();
       return { data, live: false, liveError };
     }
+  }
+
+  /** Save back to wherever this page came from. */
+  function savePayload(payload) {
+    const slug = currentSlug();
+    return slug
+      ? window.PCCApi.rpc('save_page', { page_slug: slug, payload })
+      : window.PCCApi.rpc('save_site', { payload });
   }
 
   /* ═══════════════════════════════════════════
@@ -402,6 +446,23 @@
     host.appendChild(wrap);
   }
 
+  /** Nothing lives at this address — say so rather than leaving a blank page. */
+  function showMissing() {
+    const host = document.getElementById('sections');
+    document.getElementById('sidebarNav')?.replaceChildren();
+    host.replaceChildren();
+    const wrap = el('div', 'load-error');
+    wrap.appendChild(el('h2', null, 'There is no page here'));
+    wrap.appendChild(
+      el('p', null, `Nothing is published at /${currentSlug()}. It may have been renamed or removed.`)
+    );
+    const back = el('a', 'btn', 'Go to the handbook');
+    back.href = '/';
+    wrap.appendChild(back);
+    host.appendChild(wrap);
+    document.title = 'Page not found — Passion City Worship Team';
+  }
+
   /** Re-read content and repaint. Used on first load, and again after a save
       so the page shows exactly what ended up in the database. */
   async function reload() {
@@ -419,7 +480,19 @@
       return false;
     }
 
+    if (result.missing) {
+      // A slug nobody has made, or one that has since been deleted.
+      window.PCCSite.isLive = false;
+      showMissing();
+      window.dispatchEvent(new CustomEvent('pcc:rendered', { detail: { live: false } }));
+      return false;
+    }
+
     renderSite(result.data);
+    window.PCCSite.page = (result.data && result.data.page) || null;
+    if (window.PCCSite.page && window.PCCSite.page.title) {
+      document.title = `${window.PCCSite.page.title} — Passion City Worship Team`;
+    }
     initScrollSpy();
     document.body.classList.toggle('is-stale', !result.live);
     window.PCCSite.isLive = result.live;
@@ -453,10 +526,13 @@
     updateSectionColors,
     initScrollSpy,
     serializeSite,
+    savePayload,
+    currentSlug,
     fieldText,
     photoSrc,
     initials,
     isLive: false,
+    page: null,
   };
 
   document.addEventListener('DOMContentLoaded', boot);

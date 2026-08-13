@@ -24,6 +24,6 @@ window.PCC = {
      Both talk to the same Supabase project, so the content is shared: staging
      previews code changes, not content changes. Saving an edit there changes
      the real handbook. */
-  PRODUCTION_URL: '',
+  PRODUCTION_URL: 'https://passion-city-worship-site.vercel.app',
   STAGING_URL: '',
 };
