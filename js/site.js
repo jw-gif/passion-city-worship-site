@@ -51,18 +51,24 @@
      while a copy you have the address for opens for anyone. */
   async function fetchPage(slug) {
     let row;
+    let unpublished = false;
     try {
       row = await window.PCCApi.rpc('page_by_slug', { page_slug: slug });
     } catch (err) {
-      // Before sql/public-handbook.sql is run there is no such function; a
-      // signed-in editor can still read the table directly.
+      // No such function until sql/public-handbook.sql has been run. A page
+      // may well exist — it just cannot be handed to a reader yet.
       console.warn('[pcc] page_by_slug unavailable, reading the table:', err);
-      const rows = await window.PCCApi.rest(
-        `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
-      );
-      row = rows && rows[0];
+      unpublished = true;
+      try {
+        const rows = await window.PCCApi.rest(
+          `pages?select=slug,title,content&slug=eq.${encodeURIComponent(slug)}&limit=1`
+        );
+        row = rows && rows[0];
+      } catch (restErr) {
+        console.error('[pcc] and the pages table is not readable either:', restErr);
+      }
     }
-    if (!row) return null;
+    if (!row) return { missing: true, unpublished };
     const content = row.content || {};
     return {
       sections: content.sections || [],
@@ -84,7 +90,7 @@
       // A shared copy. There is no offline snapshot of one, so a failure here
       // is a failure — better than showing the handbook under its address.
       const data = await fetchPage(slug);
-      return data ? { data, live: true } : { missing: true, live: true };
+      return data.missing ? { ...data, live: true } : { data, live: true };
     }
 
     try {
@@ -458,8 +464,10 @@
     host.appendChild(wrap);
   }
 
-  /** Nothing lives at this address — say so rather than leaving a blank page. */
-  function showMissing() {
+  /** Nothing lives at this address — say so rather than leaving a blank page.
+      "Nothing here" and "not published yet" look identical to a reader, so
+      when it is the second one, say which. */
+  function showMissing(unpublished) {
     const host = document.getElementById('sections');
     document.getElementById('sidebarNav')?.replaceChildren();
     host.replaceChildren();
@@ -468,6 +476,16 @@
     wrap.appendChild(
       el('p', null, `Nothing is published at /${currentSlug()}. It may have been renamed or removed.`)
     );
+    if (unpublished) {
+      wrap.appendChild(
+        el(
+          'p',
+          null,
+          'If this page was just made: the database still needs sql/public-handbook.sql ' +
+            'run once in Supabase before copies can be opened by their link.'
+        )
+      );
+    }
     const back = el('a', 'btn', 'Go to the handbook');
     back.href = '/';
     wrap.appendChild(back);
@@ -495,7 +513,7 @@
     if (result.missing) {
       // A slug nobody has made, or one that has since been deleted.
       window.PCCSite.isLive = false;
-      showMissing();
+      showMissing(result.unpublished);
       window.dispatchEvent(new CustomEvent('pcc:rendered', { detail: { live: false } }));
       return false;
     }
